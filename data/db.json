@@ -1,0 +1,13 @@
+{
+  "jugadores": [
+    { "id": "p1", "nombre": "Carlos", "posicion": "DEL", "turno": 1, "token": "tok-carlos-1a2b" },
+    { "id": "p2", "nombre": "Miguel", "posicion": "DEF", "turno": 1, "token": "tok-miguel-3c4d" },
+    { "id": "p3", "nombre": "Javi", "posicion": "MED", "turno": 1, "token": "tok-javi-5e6f" },
+    { "id": "p4", "nombre": "Pablo (niño)", "posicion": "DEL", "turno": 1, "token": "tok-pablo-7g8h" },
+    { "id": "p5", "nombre": "David", "posicion": "POR", "turno": 1, "token": "tok-david-9i0j" },
+    { "id": "p6", "nombre": "Alex", "posicion": "DEF", "turno": 1, "token": "tok-alex-1k2l" },
+    { "id": "p7", "nombre": "Sergio", "posicion": "MED", "turno": 1, "token": "tok-sergio-3m4n" },
+    { "id": "p8", "nombre": "Raul", "posicion": "DEF", "turno": 1, "token": "tok-raul-5o6p" }
+  ],
+  "votos": []
+}
