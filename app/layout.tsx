@@ -1,7 +1,6 @@
 import "./global.css";
 import { ReactNode } from "react";
 import { Fraunces, Manrope } from "next/font/google";
-import PageTransition from "./PageTransition";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -20,7 +19,7 @@ const manrope = Manrope({
 export const metadata = {
   title: "Fútbol Viernes — Equipos equilibrados",
   description:
-    "Reparto semanal de equipos equilibrados por puntuación cruzada entre jugadores. Sin favoritismos, sin equipos cojos: solo datos.",
+    "Reparto semanal de equipos equilibrados por puntuación cruzada entre jugadores.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -31,8 +30,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <span className="mancha mancha-1" />
           <span className="mancha mancha-2" />
           <span className="mancha mancha-3" />
+          <span className="mancha mancha-4" />
         </div>
-        <PageTransition>{children}</PageTransition>
+        {children}
       </body>
     </html>
   );
