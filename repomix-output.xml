@@ -1,0 +1,1505 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+app/
+  admin/
+    page.tsx
+  api/
+    jugadores/
+      routes.ts
+    votar/
+      [token]/
+        route.ts
+  equipos/
+    page.tsx
+    routes.ts
+  votar/
+    [token]/
+      page.tsx
+  global.css
+  layout.tsx
+  page.tsx
+data/
+  db.json
+lib/
+  algoritmo.ts
+  AnilloProgreso.tsx
+  db.ts
+.gitignore
+next.config.js
+package.json
+README.md
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="app/admin/page.tsx">
+"use client";
+
+import { useEffect, useState } from "react";
+
+interface Jugador {
+  id: string;
+  nombre: string;
+  posicion: "POR" | "DEF" | "MED" | "DEL";
+  turno: 1 | 2;
+  token: string;
+}
+
+export default function AdminPage() {
+  const [jugadores, setJugadores] = useState<Jugador[]>([]);
+  const [nombre, setNombre] = useState("");
+  const [posicion, setPosicion] = useState<Jugador["posicion"]>("MED");
+  const [turno, setTurno] = useState<1 | 2>(1);
+  const [origen, setOrigen] = useState("");
+
+  function cargar() {
+    fetch("/api/jugadores")
+      .then((r) => r.json())
+      .then(setJugadores);
+  }
+
+  useEffect(() => {
+    cargar();
+    setOrigen(window.location.origin);
+  }, []);
+
+  async function agregar() {
+    if (!nombre.trim()) return;
+    await fetch("/api/jugadores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, posicion, turno }),
+    });
+    setNombre("");
+    cargar();
+  }
+
+  function copiar(link: string) {
+    navigator.clipboard.writeText(link);
+    alert("Link copiado ");
+  }
+
+  return (
+    <div className="contenedor">
+      <div className="marca">
+        <span className="punto" />
+        Fútbol Viernes
+      </div>
+      <h1>Panel de admin</h1>
+      <p className="subtitulo">
+        Añade jugadores y copia su link de votación para mandarlo por WhatsApp
+      </p>
+
+      <div className="tarjeta">
+        <div className="fila-atributo">
+          <label>Nombre</label>
+          <input
+            className="campo-input"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            placeholder="Nombre del jugador"
+          />
+        </div>
+        <div className="fila-atributo">
+          <label>Posición</label>
+          <select
+            className="campo-select"
+            value={posicion}
+            onChange={(e) => setPosicion(e.target.value as Jugador["posicion"])}
+          >
+            <option value="POR">Portero</option>
+            <option value="DEF">Defensa</option>
+            <option value="MED">Medio</option>
+            <option value="DEL">Delantero</option>
+          </select>
+        </div>
+        <div className="fila-atributo">
+          <label>Turno</label>
+          <select
+            className="campo-select"
+            value={turno}
+            onChange={(e) => setTurno(Number(e.target.value) as 1 | 2)}
+          >
+            <option value={1}>Turno 1 (20:00)</option>
+            <option value={2}>Turno 2 (21:00)</option>
+          </select>
+        </div>
+        <button onClick={agregar}>Añadir jugador</button>
+      </div>
+
+      <h2>Turno 1</h2>
+      <div className="tarjeta">
+        {jugadores
+          .filter((j) => j.turno === 1)
+          .map((j) => (
+            <div className="link-jugador" key={j.id}>
+              <span>
+                {j.nombre}{" "}
+                <span className={`chip chip-${j.posicion}`}>{j.posicion}</span>
+              </span>
+              <button
+                className="copiar-btn"
+                onClick={() => copiar(`${origen}/votar/${j.token}`)}
+              >
+                Copiar link
+              </button>
+            </div>
+          ))}
+      </div>
+
+      <h2>Turno 2</h2>
+      <div className="tarjeta">
+        {jugadores
+          .filter((j) => j.turno === 2)
+          .map((j) => (
+            <div className="link-jugador" key={j.id}>
+              <span>
+                {j.nombre}{" "}
+                <span className={`chip chip-${j.posicion}`}>{j.posicion}</span>
+              </span>
+              <button
+                className="copiar-btn"
+                onClick={() => copiar(`${origen}/votar/${j.token}`)}
+              >
+                Copiar link
+              </button>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="app/equipos/page.tsx">
+"use client";
+
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import AnilloProgreso from "@/lib/AnilloProgreso";
+
+interface JugadorConNota {
+  id: string;
+  nombre: string;
+  posicion: string;
+  notaPosicion: number;
+  numVotos: number;
+}
+
+interface Resultado {
+  equipoA: JugadorConNota[];
+  equipoB: JugadorConNota[];
+  totalA: number;
+  totalB: number;
+  diferencia: number;
+  error?: string;
+}
+
+function EquiposContenido() {
+  const params = useSearchParams();
+  const turno = params.get("turno") === "2" ? "2" : "1";
+
+  const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [cargando, setCargando] = useState(true);
+
+  async function generar() {
+    setCargando(true);
+    const r = await fetch(`/api/equipos?turno=${turno}`);
+    const data = await r.json();
+    setResultado(data);
+    setCargando(false);
+  }
+
+  useEffect(() => {
+    generar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turno]);
+
+  return (
+    <div className="contenedor">
+      <div className="marca">
+        <span className="punto" />
+        Fútbol Viernes
+      </div>
+      <h1>Equipos — Turno {turno}</h1>
+      <p className="subtitulo">
+        Generados a partir de la puntuación cruzada del grupo
+      </p>
+
+      {cargando && <p className="subtitulo">Calculando equipos...</p>}
+      {resultado?.error && <p className="subtitulo">{resultado.error}</p>}
+
+      {resultado && !resultado.error && (
+        <>
+          <div className="tarjeta" style={{ textAlign: "center" }}>
+            <span className="subtitulo" style={{ marginBottom: 0 }}>
+              Diferencia entre equipos:{" "}
+              <strong style={{ color: "var(--verde-texto)" }}>
+                {resultado.diferencia}
+              </strong>{" "}
+              pts
+            </span>
+          </div>
+
+          <div className="equipos-grid">
+            <div className="tarjeta">
+              <div className="total-equipo">Equipo A — {resultado.totalA}</div>
+              {resultado.equipoA.map((j) => (
+                <div className="jugador-fila" key={j.id}>
+                  <span>
+                    {j.nombre}
+                    <span className={`chip chip-${j.posicion}`}>
+                      {j.posicion}
+                    </span>
+                  </span>
+                  <AnilloProgreso valor={j.notaPosicion} size={44} grosor={4} />
+                </div>
+              ))}
+            </div>
+
+            <div className="tarjeta">
+              <div className="total-equipo">Equipo B — {resultado.totalB}</div>
+              {resultado.equipoB.map((j) => (
+                <div className="jugador-fila" key={j.id}>
+                  <span>
+                    {j.nombre}
+                    <span className={`chip chip-${j.posicion}`}>
+                      {j.posicion}
+                    </span>
+                  </span>
+                  <AnilloProgreso valor={j.notaPosicion} size={44} grosor={4} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={generar}>Regenerar equipos</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function EquiposPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="contenedor">
+          <p className="subtitulo">Cargando...</p>
+        </div>
+      }
+    >
+      <EquiposContenido />
+    </Suspense>
+  );
+}
+</file>
+
+<file path="app/votar/[token]/page.tsx">
+"use client";
+
+import { useEffect, useState } from "react";
+import AnilloProgreso from "@/lib/AnilloProgreso";
+
+interface Objetivo {
+  id: string;
+  nombre: string;
+  posicion: string;
+}
+
+interface Atributos {
+  ritmo: number;
+  resistencia: number;
+  tecnica: number;
+  remate: number;
+  defensa: number;
+}
+
+const ATRIBUTOS_INFO: { key: keyof Atributos; label: string }[] = [
+  { key: "ritmo", label: "Ritmo" },
+  { key: "resistencia", label: "Resistencia" },
+  { key: "tecnica", label: "Técnica" },
+  { key: "remate", label: "Remate" },
+  { key: "defensa", label: "Defensa" },
+];
+
+export default function VotarPage({ params }: { params: { token: string } }) {
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+  const [votanteNombre, setVotanteNombre] = useState("");
+  const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
+  const [indice, setIndice] = useState(0);
+  const [valores, setValores] = useState<Record<string, Atributos>>({});
+  const [enviando, setEnviando] = useState(false);
+  const [terminado, setTerminado] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/votar/${params.token}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          setError(data.error);
+        } else {
+          setVotanteNombre(data.votante.nombre);
+          setObjetivos(data.objetivos);
+          const iniciales: Record<string, Atributos> = {};
+          data.objetivos.forEach((o: Objetivo) => {
+            iniciales[o.id] = {
+              ritmo: 5,
+              resistencia: 5,
+              tecnica: 5,
+              remate: 5,
+              defensa: 5,
+            };
+          });
+          setValores(iniciales);
+        }
+        setCargando(false);
+      });
+  }, [params.token]);
+
+  if (cargando)
+    return (
+      <div className="contenedor">
+        <p className="subtitulo">Cargando...</p>
+      </div>
+    );
+  if (error)
+    return (
+      <div className="contenedor">
+        <p className="subtitulo">{error}</p>
+      </div>
+    );
+  if (objetivos.length === 0)
+    return (
+      <div className="contenedor">
+        <p className="subtitulo">No hay nadie a quien votar todavía.</p>
+      </div>
+    );
+
+  const actual = objetivos[indice];
+  const esUltimo = indice === objetivos.length - 1;
+
+  function actualizarValor(key: keyof Atributos, value: number) {
+    setValores((prev) => ({
+      ...prev,
+      [actual.id]: { ...prev[actual.id], [key]: value },
+    }));
+  }
+
+  async function siguiente() {
+    if (esUltimo) {
+      setEnviando(true);
+      const votos = objetivos.map((o) => ({
+        objetivoId: o.id,
+        ...valores[o.id],
+      }));
+      await fetch(`/api/votar/${params.token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ votos }),
+      });
+      setEnviando(false);
+      setTerminado(true);
+    } else {
+      setIndice((i) => i + 1);
+    }
+  }
+
+  if (terminado) {
+    return (
+      <div className="contenedor">
+        <div className="marca">
+          <span className="punto" />
+          Fútbol Viernes
+        </div>
+        <h1>Gracias, {votanteNombre}</h1>
+        <p className="subtitulo">Tu votación se ha guardado correctamente.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="contenedor">
+      <div className="marca">
+        <span className="punto" />
+        Fútbol Viernes
+      </div>
+      <h1>Hola, {votanteNombre}</h1>
+      <p className="subtitulo">
+        Puntúa a{" "}
+        <strong style={{ color: "var(--verde-texto)" }}>{actual.nombre}</strong>{" "}
+        del 1 al 10 en cada atributo. Tus votos son anónimos para los demás.
+      </p>
+
+      <div
+        className="tarjeta"
+        style={{ display: "flex", alignItems: "center", gap: 16 }}
+      >
+        <AnilloProgreso
+          valor={indice + 1}
+          max={objetivos.length}
+          size={54}
+          etiqueta="jugador"
+        />
+        <span className="subtitulo" style={{ margin: 0 }}>
+          {indice + 1} de {objetivos.length} jugadores
+        </span>
+      </div>
+
+      <div className="tarjeta">
+        <h2>
+          {actual.nombre}
+          <span className={`chip chip-${actual.posicion}`}>
+            {actual.posicion}
+          </span>
+        </h2>
+
+        {ATRIBUTOS_INFO.map(({ key, label }) => (
+          <div className="fila-atributo" key={key}>
+            <label>{label}</label>
+            <input
+              type="range"
+              min={1}
+              max={10}
+              value={valores[actual.id]?.[key] ?? 5}
+              onChange={(e) => actualizarValor(key, Number(e.target.value))}
+            />
+            <span className="valor-atributo">
+              {valores[actual.id]?.[key] ?? 5}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={siguiente} disabled={enviando}>
+        {enviando
+          ? "Guardando..."
+          : esUltimo
+            ? "Terminar y enviar"
+            : "Siguiente jugador →"}
+      </button>
+    </div>
+  );
+}
+</file>
+
+<file path="app/global.css">
+:root {
+  /* Paleta verde bosque */
+  --verde-texto: #0f2e1c;
+  --verde-primario: #1a7a4c;
+  --verde-primario-oscuro: #135c3a;
+  --texto-secundario: #5b7568;
+  --verde-niebla: #eaf5ee;
+  --fondo-base: #f7faf8;
+
+  /* Cristal */
+  --cristal-bg: rgba(255, 255, 255, 0.55);
+  --cristal-bg-fuerte: rgba(255, 255, 255, 0.72);
+  --cristal-borde: rgba(26, 122, 76, 0.14);
+  --sombra-cristal: 0 8px 32px rgba(15, 46, 28, 0.08);
+
+  /* Posiciones (tonos editoriales, no saturados) */
+  --por: #7c5cbf;
+  --def: #b8863b;
+  --med: #3f7cac;
+  --del: #c1503f;
+
+  --radio-lg: 20px;
+  --radio-md: 14px;
+  --radio-sm: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-manrope), sans-serif;
+  background: var(--fondo-base);
+  color: var(--verde-texto);
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Manchas de fondo — dan textura real al backdrop-blur */
+.fondo-manchas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+}
+.mancha {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+}
+.mancha-1 {
+  top: -12%;
+  left: -10%;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, var(--verde-niebla), transparent 70%);
+}
+.mancha-2 {
+  bottom: -18%;
+  right: -8%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(26, 122, 76, 0.16), transparent 70%);
+}
+.mancha-3 {
+  top: 38%;
+  left: 58%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(
+    circle,
+    rgba(234, 245, 238, 0.95),
+    transparent 70%
+  );
+}
+
+.contenedor {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--verde-primario);
+  margin-bottom: 18px;
+  letter-spacing: 0.01em;
+}
+.marca .punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--verde-primario);
+  display: inline-block;
+}
+
+h1 {
+  font-family: var(--font-fraunces), serif;
+  font-weight: 600;
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  color: var(--verde-texto);
+}
+h2 {
+  font-family: var(--font-fraunces), serif;
+  font-weight: 500;
+  font-size: 1.15rem;
+  margin: 0 0 4px;
+  color: var(--verde-texto);
+}
+
+.subtitulo {
+  color: var(--texto-secundario);
+  margin: 0 0 28px;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+/* Tarjeta de cristal */
+.tarjeta {
+  background: var(--cristal-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--cristal-borde);
+  border-radius: var(--radio-lg);
+  padding: 22px;
+  margin-bottom: 16px;
+  box-shadow: var(--sombra-cristal);
+}
+
+/* Botones */
+button,
+.boton-primario {
+  background: var(--verde-primario);
+  color: #fff;
+  border: none;
+  padding: 13px 20px;
+  border-radius: var(--radio-md);
+  font-family: var(--font-manrope), sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  width: 100%;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
+}
+button:hover,
+.boton-primario:hover {
+  background: var(--verde-primario-oscuro);
+}
+button:active {
+  transform: translateY(1px);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.boton-secundario {
+  background: transparent;
+  color: var(--verde-primario);
+  border: 1.5px solid var(--verde-primario);
+  padding: 11px 20px;
+  border-radius: var(--radio-md);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  width: 100%;
+}
+.boton-secundario:hover {
+  background: var(--verde-niebla);
+}
+
+/* Inputs — reemplazan los estilos inline del admin */
+.campo-input,
+.campo-select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radio-md);
+  border: 1px solid var(--cristal-borde);
+  background: var(--cristal-bg-fuerte);
+  color: var(--verde-texto);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.campo-input:focus,
+.campo-select:focus {
+  border-color: var(--verde-primario);
+  box-shadow: 0 0 0 3px rgba(26, 122, 76, 0.12);
+}
+.campo-input::placeholder {
+  color: var(--texto-secundario);
+}
+
+.fila-atributo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 6px 0;
+}
+.fila-atributo label {
+  width: 110px;
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+  font-weight: 500;
+}
+
+.fila-atributo input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--verde-niebla);
+  outline: none;
+}
+.fila-atributo input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--verde-primario);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(15, 46, 28, 0.25);
+  cursor: pointer;
+}
+.fila-atributo input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--verde-primario);
+  border: 3px solid #fff;
+  cursor: pointer;
+}
+.valor-atributo {
+  width: 22px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--verde-primario);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chips de posición */
+.chip {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-left: 8px;
+  color: #fff;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+.chip-DEL {
+  background: var(--del);
+}
+.chip-MED {
+  background: var(--med);
+}
+.chip-DEF {
+  background: var(--def);
+}
+.chip-POR {
+  background: var(--por);
+}
+
+.equipos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 560px) {
+  .equipos-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.jugador-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cristal-borde);
+  font-size: 0.9rem;
+}
+.jugador-fila:last-child {
+  border-bottom: none;
+}
+
+.total-equipo {
+  font-family: var(--font-fraunces), serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 10px;
+  color: var(--verde-texto);
+}
+
+a {
+  color: var(--verde-primario);
+  text-decoration: none;
+}
+
+.link-jugador {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--cristal-borde);
+  font-size: 0.85rem;
+  word-break: break-all;
+  gap: 10px;
+}
+.link-jugador:last-child {
+  border-bottom: none;
+}
+.copiar-btn {
+  width: auto;
+  padding: 7px 14px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+</file>
+
+<file path="app/layout.tsx">
+import "./global.css";
+import { ReactNode } from "react";
+import { Fraunces, Manrope } from "next/font/google";
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+export const metadata = {
+  title: "Fútbol Viernes — Equipos equilibrados",
+  description:
+    "Reparto semanal de equipos equilibrados por puntuación cruzada entre jugadores. Sin favoritismos, sin equipos cojos: solo datos.",
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="es" className={`${fraunces.variable} ${manrope.variable}`}>
+      <body>
+        <div className="fondo-manchas" aria-hidden="true">
+          <span className="mancha mancha-1" />
+          <span className="mancha mancha-2" />
+          <span className="mancha mancha-3" />
+        </div>
+        {children}
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="app/page.tsx">
+import Link from "next/link";
+import AnilloProgreso from "@/lib/AnilloProgreso";
+
+export default function Home() {
+  return (
+    <div className="contenedor">
+      <div className="marca">
+        <span className="punto" />
+        Fútbol Viernes
+      </div>
+
+      <h1>Equipos equilibrados, sin discusiones</h1>
+      <p className="subtitulo">
+        Cada jugador puntúa al resto de forma anónima. Con esos datos, el
+        reparto sale solo — ni favoritismos, ni equipos cojos.
+      </p>
+
+      <div
+        className="tarjeta"
+        style={{ display: "flex", alignItems: "center", gap: 18 }}
+      >
+        <AnilloProgreso valor={8.4} etiqueta="media" size={64} />
+        <div>
+          <h2>Panel de admin</h2>
+          <p className="subtitulo" style={{ marginBottom: 14 }}>
+            Añade jugadores y consigue el link de votación de cada uno.
+          </p>
+          <Link href="/admin">
+            <button>Ir al panel de admin</button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="tarjeta">
+        <h2>Generar equipos</h2>
+        <p className="subtitulo" style={{ marginBottom: 16 }}>
+          Reparte a los jugadores de un turno en dos equipos equilibrados.
+        </p>
+        <Link href="/equipos?turno=1">
+          <button>Ver equipos — Turno 1 (20:00)</button>
+        </Link>
+        <div style={{ height: 10 }} />
+        <Link href="/equipos?turno=2">
+          <button
+            className="boton-secundario"
+            style={{ background: "transparent" }}
+          >
+            Ver equipos — Turno 2 (21:00)
+          </button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="lib/AnilloProgreso.tsx">
+interface AnilloProgresoProps {
+  valor: number; // 0-10, por ejemplo la notaPosicion
+  max?: number;
+  size?: number;
+  grosor?: number;
+  etiqueta?: string; // texto pequeño bajo el número, opcional
+  color?: string;
+}
+
+export default function AnilloProgreso({
+  valor,
+  max = 10,
+  size = 56,
+  grosor = 5,
+  etiqueta,
+  color = "var(--verde-primario)",
+}: AnilloProgresoProps) {
+  const radio = (size - grosor) / 2;
+  const circunferencia = 2 * Math.PI * radio;
+  const porcentaje = Math.max(0, Math.min(1, valor / max));
+  const offset = circunferencia * (1 - porcentaje);
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: size,
+        height: size,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radio}
+          fill="none"
+          stroke="var(--verde-niebla)"
+          strokeWidth={grosor}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radio}
+          fill="none"
+          stroke={color}
+          strokeWidth={grosor}
+          strokeDasharray={circunferencia}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.4s ease" }}
+        />
+      </svg>
+      <div
+        style={{
+          position: "absolute",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          lineHeight: 1,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-fraunces)",
+            fontWeight: 600,
+            fontSize: size * 0.28,
+            color: "var(--verde-texto)",
+          }}
+        >
+          {valor.toFixed(1)}
+        </span>
+        {etiqueta && (
+          <span
+            style={{
+              fontSize: size * 0.13,
+              color: "var(--texto-secundario)",
+              marginTop: 2,
+            }}
+          >
+            {etiqueta}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="next.config.js">
+/** @type {import('next').NextConfig} */
+const nextConfig = {};
+
+module.exports = nextConfig;
+</file>
+
+<file path="app/api/jugadores/routes.ts">
+import { NextRequest, NextResponse } from "next/server";
+import { readDB, writeDB, Jugador } from "@/lib/db";
+import { nanoid } from "nanoid";
+
+export async function GET() {
+  const db = readDB();
+  return NextResponse.json(db.jugadores);
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const { nombre, posicion, turno } = body;
+
+  if (!nombre || !posicion || !turno) {
+    return NextResponse.json({ error: "Faltan campos" }, { status: 400 });
+  }
+
+  const db = readDB();
+  const nuevo: Jugador = {
+    id: nanoid(8),
+    nombre,
+    posicion,
+    turno,
+    token: `tok-${nombre.toLowerCase().replace(/\s+/g, "-")}-${nanoid(6)}`,
+  };
+  db.jugadores.push(nuevo);
+  writeDB(db);
+
+  return NextResponse.json(nuevo);
+}
+</file>
+
+<file path="app/api/votar/[token]/route.ts">
+import { NextRequest, NextResponse } from "next/server";
+import { readDB, writeDB } from "@/lib/db";
+
+// Devuelve quién es el votante y a quién puede votar (todos menos él mismo,
+// del mismo turno)
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { token: string } }
+) {
+  const db = readDB();
+  const votante = db.jugadores.find((j) => j.token === params.token);
+
+  if (!votante) {
+    return NextResponse.json({ error: "Link no válido" }, { status: 404 });
+  }
+
+  const objetivos = db.jugadores.filter(
+    (j) => j.turno === votante.turno && j.id !== votante.id
+  );
+
+  const yaVotadosIds = new Set(
+    db.votos.filter((v) => v.votanteId === votante.id).map((v) => v.objetivoId)
+  );
+
+  const pendientes = objetivos.filter((o) => !yaVotadosIds.has(o.id));
+
+  return NextResponse.json({
+    votante: { id: votante.id, nombre: votante.nombre },
+    objetivos: objetivos.map((o) => ({ id: o.id, nombre: o.nombre, posicion: o.posicion })),
+    pendientesIds: pendientes.map((p) => p.id),
+  });
+}
+
+// Recibe un array de votos: { objetivoId, ritmo, resistencia, tecnica, remate, defensa }
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { token: string } }
+) {
+  const db = readDB();
+  const votante = db.jugadores.find((j) => j.token === params.token);
+
+  if (!votante) {
+    return NextResponse.json({ error: "Link no válido" }, { status: 404 });
+  }
+
+  const body = await req.json();
+  const votos = body.votos as Array<{
+    objetivoId: string;
+    ritmo: number;
+    resistencia: number;
+    tecnica: number;
+    remate: number;
+    defensa: number;
+  }>;
+
+  for (const v of votos) {
+    // Evita duplicados: si ya había votado a esa persona, se sobreescribe
+    db.votos = db.votos.filter(
+      (existing) => !(existing.votanteId === votante.id && existing.objetivoId === v.objetivoId)
+    );
+    db.votos.push({
+      votanteId: votante.id,
+      objetivoId: v.objetivoId,
+      ritmo: v.ritmo,
+      resistencia: v.resistencia,
+      tecnica: v.tecnica,
+      remate: v.remate,
+      defensa: v.defensa,
+    });
+  }
+
+  writeDB(db);
+  return NextResponse.json({ ok: true });
+}
+</file>
+
+<file path="app/equipos/routes.ts">
+import { NextRequest, NextResponse } from "next/server";
+import { readDB } from "@/lib/db";
+import { calcularJugadoresConNota, generarEquipos } from "@/lib/algoritmo";
+
+export async function GET(req: NextRequest) {
+  const turnoParam = req.nextUrl.searchParams.get("turno") ?? "1";
+  const turno = turnoParam === "2" ? 2 : 1;
+
+  const db = readDB();
+  const jugadores = calcularJugadoresConNota(db, turno);
+
+  if (jugadores.length < 2) {
+    return NextResponse.json({ error: "No hay suficientes jugadores en ese turno" }, { status: 400 });
+  }
+
+  const resultado = generarEquipos(jugadores);
+  return NextResponse.json(resultado);
+}
+</file>
+
+<file path="data/db.json">
+{
+  "jugadores": [
+    { "id": "p1", "nombre": "Carlos", "posicion": "DEL", "turno": 1, "token": "tok-carlos-1a2b" },
+    { "id": "p2", "nombre": "Miguel", "posicion": "DEF", "turno": 1, "token": "tok-miguel-3c4d" },
+    { "id": "p3", "nombre": "Javi", "posicion": "MED", "turno": 1, "token": "tok-javi-5e6f" },
+    { "id": "p4", "nombre": "Pablo (niño)", "posicion": "DEL", "turno": 1, "token": "tok-pablo-7g8h" },
+    { "id": "p5", "nombre": "David", "posicion": "POR", "turno": 1, "token": "tok-david-9i0j" },
+    { "id": "p6", "nombre": "Alex", "posicion": "DEF", "turno": 1, "token": "tok-alex-1k2l" },
+    { "id": "p7", "nombre": "Sergio", "posicion": "MED", "turno": 1, "token": "tok-sergio-3m4n" },
+    { "id": "p8", "nombre": "Raul", "posicion": "DEF", "turno": 1, "token": "tok-raul-5o6p" }
+  ],
+  "votos": []
+}
+</file>
+
+<file path="lib/algoritmo.ts">
+import { DB, Jugador, Posicion, Voto } from "./db";
+
+export interface Atributos {
+  ritmo: number;
+  resistencia: number;
+  tecnica: number;
+  remate: number;
+  defensa: number;
+}
+
+export interface JugadorConNota extends Jugador {
+  atributos: Atributos;
+  notaPosicion: number; // 1-10, específica de su posición asignada
+  numVotos: number;
+}
+
+// Promedia todos los votos recibidos por un jugador
+function promedioAtributos(votos: Voto[], jugadorId: string): Atributos {
+  const recibidos = votos.filter((v) => v.objetivoId === jugadorId);
+  if (recibidos.length === 0) {
+    return { ritmo: 5, resistencia: 5, tecnica: 5, remate: 5, defensa: 5 };
+  }
+  const sum = recibidos.reduce(
+    (acc, v) => ({
+      ritmo: acc.ritmo + v.ritmo,
+      resistencia: acc.resistencia + v.resistencia,
+      tecnica: acc.tecnica + v.tecnica,
+      remate: acc.remate + v.remate,
+      defensa: acc.defensa + v.defensa,
+    }),
+    { ritmo: 0, resistencia: 0, tecnica: 0, remate: 0, defensa: 0 }
+  );
+  const n = recibidos.length;
+  return {
+    ritmo: sum.ritmo / n,
+    resistencia: sum.resistencia / n,
+    tecnica: sum.tecnica / n,
+    remate: sum.remate / n,
+    defensa: sum.defensa / n,
+  };
+}
+
+// Pesos de cada atributo según la posición (ajusta a tu gusto,
+// cada fila debería sumar aprox. 1)
+const PESOS: Record<Posicion, Atributos> = {
+  DEL: { remate: 0.4, ritmo: 0.3, tecnica: 0.3, resistencia: 0, defensa: 0 },
+  MED: { tecnica: 0.4, resistencia: 0.3, ritmo: 0.3, remate: 0, defensa: 0 },
+  DEF: { defensa: 0.5, resistencia: 0.3, ritmo: 0.2, remate: 0, tecnica: 0 },
+  POR: { defensa: 0.3, tecnica: 0.3, resistencia: 0.2, ritmo: 0.2, remate: 0 },
+};
+
+function notaPorPosicion(atributos: Atributos, posicion: Posicion): number {
+  const pesos = PESOS[posicion];
+  const nota =
+    atributos.ritmo * pesos.ritmo +
+    atributos.resistencia * pesos.resistencia +
+    atributos.tecnica * pesos.tecnica +
+    atributos.remate * pesos.remate +
+    atributos.defensa * pesos.defensa;
+  return Math.round(nota * 10) / 10;
+}
+
+export function calcularJugadoresConNota(db: DB, turno: 1 | 2): JugadorConNota[] {
+  return db.jugadores
+    .filter((j) => j.turno === turno)
+    .map((j) => {
+      const atributos = promedioAtributos(db.votos, j.id);
+      const numVotos = db.votos.filter((v) => v.objetivoId === j.id).length;
+      return {
+        ...j,
+        atributos,
+        notaPosicion: notaPorPosicion(atributos, j.posicion),
+        numVotos,
+      };
+    });
+}
+
+export interface ResultadoEquipos {
+  equipoA: JugadorConNota[];
+  equipoB: JugadorConNota[];
+  totalA: number;
+  totalB: number;
+  diferencia: number;
+}
+
+function totalEquipo(equipo: JugadorConNota[]): number {
+  return Math.round(equipo.reduce((s, j) => s + j.notaPosicion, 0) * 10) / 10;
+}
+
+// Genera equipos equilibrados por posición usando reparto tipo "draft
+// serpiente" con barajado aleatorio entre jugadores de nota similar, y se
+// queda con la mejor de varias combinaciones para minimizar la diferencia
+// total.
+export function generarEquipos(jugadores: JugadorConNota[], intentos = 300): ResultadoEquipos {
+  const posiciones: Posicion[] = ["POR", "DEF", "MED", "DEL"];
+  let mejor: ResultadoEquipos | null = null;
+
+  for (let intento = 0; intento < intentos; intento++) {
+    const equipoA: JugadorConNota[] = [];
+    const equipoB: JugadorConNota[] = [];
+
+    for (const pos of posiciones) {
+      const grupo = jugadores.filter((j) => j.posicion === pos);
+      const conRuido = grupo
+        .map((j) => ({ j, key: j.notaPosicion + (Math.random() - 0.5) }))
+        .sort((a, b) => b.key - a.key)
+        .map((x) => x.j);
+
+      let turnoA = true;
+      let i = 0;
+      while (i < conRuido.length) {
+        if (turnoA) {
+          equipoA.push(conRuido[i]);
+          i++;
+          if (i < conRuido.length) {
+            equipoB.push(conRuido[i]);
+            i++;
+          }
+        } else {
+          equipoB.push(conRuido[i]);
+          i++;
+          if (i < conRuido.length) {
+            equipoA.push(conRuido[i]);
+            i++;
+          }
+        }
+        turnoA = !turnoA;
+      }
+    }
+
+    const totalA = totalEquipo(equipoA);
+    const totalB = totalEquipo(equipoB);
+    const diferencia = Math.round(Math.abs(totalA - totalB) * 10) / 10;
+
+    if (!mejor || diferencia < mejor.diferencia) {
+      mejor = { equipoA, equipoB, totalA, totalB, diferencia };
+    }
+    if (diferencia === 0) break;
+  }
+
+  return mejor!;
+}
+</file>
+
+<file path="lib/db.ts">
+import fs from "fs";
+import path from "path";
+
+const DB_PATH = path.join(process.cwd(), "data", "db.json");
+
+export type Posicion = "POR" | "DEF" | "MED" | "DEL";
+
+export interface Jugador {
+  id: string;
+  nombre: string;
+  posicion: Posicion;
+  turno: 1 | 2;
+  token: string;
+}
+
+export interface Voto {
+  votanteId: string;
+  objetivoId: string;
+  ritmo: number;
+  resistencia: number;
+  tecnica: number;
+  remate: number;
+  defensa: number;
+}
+
+export interface DB {
+  jugadores: Jugador[];
+  votos: Voto[];
+}
+
+export function readDB(): DB {
+  const raw = fs.readFileSync(DB_PATH, "utf-8");
+  return JSON.parse(raw) as DB;
+}
+
+export function writeDB(db: DB) {
+  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf-8");
+}
+</file>
+
+<file path=".gitignore">
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# local env files
+.env
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+</file>
+
+<file path="package.json">
+{
+  "name": "futbol-equipos",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.15",
+    "@types/react": "^18.3.3"
+  }
+}
+</file>
+
+<file path="README.md">
+# futbol-app
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": { "@/*": ["./*"] }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+</file>
+
+</files>

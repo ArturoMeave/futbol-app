@@ -91,42 +91,155 @@ function totalEquipo(equipo: JugadorConNota[]): number {
 // serpiente" con barajado aleatorio entre jugadores de nota similar, y se
 // queda con la mejor de varias combinaciones para minimizar la diferencia
 // total.
-export function generarEquipos(jugadores: JugadorConNota[], intentos = 300): ResultadoEquipos {
+export function generarEquipos(
+  jugadores: JugadorConNota[],
+  intentos = 300
+): ResultadoEquipos {
   const posiciones: Posicion[] = ["POR", "DEF", "MED", "DEL"];
+
+  // Si el número total de jugadores es impar, dejamos uno fuera (el de nota
+  // más baja global) para garantizar N vs N. Si es par, se reparten todos.
+  let pool = [...jugadores];
+  if (pool.length % 2 !== 0) {
+    pool.sort((a, b) => b.notaPosicion - a.notaPosicion);
+    pool = pool.slice(0, pool.length - 1);
+  }
+  const objetivoPorEquipo = pool.length / 2;
+
+  // Cuántos jugadores de cada posición deben ir a cada equipo (reparto
+  // equilibrado por posición). Si una posición tiene un número impar, el
+  // "extra" se asigna de forma alterna entre A y B.
+  const porPosicion: Record<Posicion, number> = {
+    POR: 0,
+    DEF: 0,
+    MED: 0,
+    DEL: 0,
+  };
+
+  const numPorPosicion: Record<Posicion, number> = {
+    POR: 0,
+    DEF: 0,
+    MED: 0,
+    DEL: 0,
+  };
+
+  for (const pos of posiciones) {
+    numPorPosicion[pos] = pool.filter((j) => j.posicion === pos).length;
+  }
+
   let mejor: ResultadoEquipos | null = null;
 
   for (let intento = 0; intento < intentos; intento++) {
     const equipoA: JugadorConNota[] = [];
     const equipoB: JugadorConNota[] = [];
+    // Lleva cuántos de cada posición ya tiene el equipo A
+    const cuentaA: Record<Posicion, number> = {
+      POR: 0,
+      DEF: 0,
+      MED: 0,
+      DEL: 0,
+    };
+    // Cuántos de cada posición van a cada equipo
+    const metaA: Record<Posicion, number> = {
+      POR: 0,
+      DEF: 0,
+      MED: 0,
+      DEL: 0,
+    };
+
+    // Repartir meta por posición: base mitad + reparto del resto
+    for (const pos of posiciones) {
+      const total = numPorPosicion[pos];
+      // base entera por equipo
+      const base = Math.floor(total / 2);
+      metaA[pos] = base;
+      // si sobra uno, alternar entre intentos para que no siempre caiga en A
+      if (total % 2 === 1) {
+        if (intento % 2 === 0) metaA[pos] += 1;
+      }
+    }
+
+    // Ajuste: si el equipo A excede el objetivo, quitamos de las posiciones
+    // con más sobrecarga. Bucle sencillo de equilibrio.
+    const sumaMetaA = posiciones.reduce((s, p) => s + metaA[p], 0);
+    let diff = sumaMetaA - objetivoPorEquipo;
+    while (diff > 0) {
+      // quitar 1 de la posición con más jugadores en A
+      let posMax: Posicion | null = null;
+      let maxVal = -1;
+      for (const pos of posiciones) {
+        if (metaA[pos] > maxVal) {
+          maxVal = metaA[pos];
+          posMax = pos;
+        }
+      }
+      if (posMax && metaA[posMax] > 0) {
+        metaA[posMax]--;
+        diff--;
+      } else break;
+    }
+    while (diff < 0) {
+      let posMax: Posicion | null = null;
+      let maxVal = -1;
+      for (const pos of posiciones) {
+        const disponible = numPorPosicion[pos] - metaA[pos];
+        if (disponible > maxVal) {
+          maxVal = disponible;
+          posMax = pos;
+        }
+      }
+      if (posMax) {
+        metaA[posMax]++;
+        diff++;
+      } else break;
+    }
 
     for (const pos of posiciones) {
-      const grupo = jugadores.filter((j) => j.posicion === pos);
+      const grupo = pool.filter((j) => j.posicion === pos);
       const conRuido = grupo
         .map((j) => ({ j, key: j.notaPosicion + (Math.random() - 0.5) }))
         .sort((a, b) => b.key - a.key)
         .map((x) => x.j);
 
+      // Reparto serpiente asignando alternadamente a A y B, respetando metaA
       let turnoA = true;
       let i = 0;
       while (i < conRuido.length) {
-        if (turnoA) {
+        const quedaA = metaA[pos] - cuentaA[pos];
+        const yaB = i - cuentaA[pos];
+        const quedaB = numPorPosicion[pos] - metaA[pos] - yaB;
+
+        let aAsignado = false;
+        if (turnoA && quedaA > 0) {
           equipoA.push(conRuido[i]);
+          cuentaA[pos]++;
           i++;
-          if (i < conRuido.length) {
-            equipoB.push(conRuido[i]);
-            i++;
-          }
-        } else {
+          aAsignado = true;
+        } else if (!turnoA && quedaB > 0) {
           equipoB.push(conRuido[i]);
           i++;
-          if (i < conRuido.length) {
-            equipoA.push(conRuido[i]);
-            i++;
-          }
+          aAsignado = true;
+        } else if (quedaA > 0) {
+          equipoA.push(conRuido[i]);
+          cuentaA[pos]++;
+          i++;
+          aAsignado = true;
+        } else if (quedaB > 0) {
+          equipoB.push(conRuido[i]);
+          i++;
+          aAsignado = true;
+        }
+
+        if (!aAsignado) {
+          i++;
         }
         turnoA = !turnoA;
       }
+      porPosicion[pos] = cuentaA[pos];
     }
+
+    // Validación estricta: equipos deben ser del mismo tamaño
+    if (equipoA.length !== equipoB.length) continue;
 
     const totalA = totalEquipo(equipoA);
     const totalB = totalEquipo(equipoB);

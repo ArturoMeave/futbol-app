@@ -1,32 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readDB, writeDB } from "@/lib/db";
+import { getJugadorPorToken, getJugadores, getVotosDeVotante, upsertVoto } from "@/lib/db";
 
 // Devuelve quién es el votante y a quién puede votar (todos menos él mismo,
 // del mismo turno)
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { token: string } }
 ) {
-  const db = readDB();
-  const votante = db.jugadores.find((j) => j.token === params.token);
+  const votante = await getJugadorPorToken(params.token);
 
   if (!votante) {
     return NextResponse.json({ error: "Link no válido" }, { status: 404 });
   }
 
-  const objetivos = db.jugadores.filter(
+  const [jugadores, votosHechos] = await Promise.all([
+    getJugadores(),
+    getVotosDeVotante(votante.id),
+  ]);
+
+  const objetivos = jugadores.filter(
     (j) => j.turno === votante.turno && j.id !== votante.id
   );
 
-  const yaVotadosIds = new Set(
-    db.votos.filter((v) => v.votanteId === votante.id).map((v) => v.objetivoId)
-  );
+  const yaVotadosIds = new Set(votosHechos.map((v) => v.objetivoId));
 
   const pendientes = objetivos.filter((o) => !yaVotadosIds.has(o.id));
 
   return NextResponse.json({
     votante: { id: votante.id, nombre: votante.nombre },
-    objetivos: objetivos.map((o) => ({ id: o.id, nombre: o.nombre, posicion: o.posicion })),
+    objetivos: objetivos.map((o) => ({
+      id: o.id,
+      nombre: o.nombre,
+      posicion: o.posicion,
+    })),
     pendientesIds: pendientes.map((p) => p.id),
   });
 }
@@ -36,8 +42,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { token: string } }
 ) {
-  const db = readDB();
-  const votante = db.jugadores.find((j) => j.token === params.token);
+  const votante = await getJugadorPorToken(params.token);
 
   if (!votante) {
     return NextResponse.json({ error: "Link no válido" }, { status: 404 });
@@ -54,11 +59,14 @@ export async function POST(
   }>;
 
   for (const v of votos) {
-    // Evita duplicados: si ya había votado a esa persona, se sobreescribe
-    db.votos = db.votos.filter(
-      (existing) => !(existing.votanteId === votante.id && existing.objetivoId === v.objetivoId)
-    );
-    db.votos.push({
+    const atributos = [v.ritmo, v.resistencia, v.tecnica, v.remate, v.defensa];
+    if (atributos.some((a) => a < 1 || a > 10 || !Number.isInteger(a))) {
+      return NextResponse.json(
+        { error: "Los valores deben ser enteros del 1 al 10" },
+        { status: 400 }
+      );
+    }
+    await upsertVoto({
       votanteId: votante.id,
       objetivoId: v.objetivoId,
       ritmo: v.ritmo,
@@ -69,6 +77,5 @@ export async function POST(
     });
   }
 
-  writeDB(db);
   return NextResponse.json({ ok: true });
 }
