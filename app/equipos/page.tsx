@@ -28,16 +28,36 @@ interface TurnoOpt {
   activo: boolean;
 }
 
+interface HistorialItem {
+  id: number;
+  turnoId: string;
+  turnoNombre: string;
+  fecha: number;
+  totalA: number;
+  totalB: number;
+  diferencia: number;
+  equipoA: { id: string; nombre: string; posicion: string; notaPosicion: number }[];
+  equipoB: { id: string; nombre: string; posicion: string; notaPosicion: number }[];
+}
+
 function EquiposContenido() {
   const params = useSearchParams();
   const [turnos, setTurnos] = useState<TurnoOpt[]>([]);
-  const [turnoActual, setTurnoActual] = useState(
-    params.get("turno") ?? ""
-  );
+  const [turnoActual, setTurnoActual] = useState(params.get("turno") ?? "");
   const [resultado, setResultado] = useState<Resultado | null>(null);
-  const [cargando, setCargando] = useState(true);
-  const [regenerando, setRegenerando] = useState(false);
-  const [intentos, setIntentos] = useState(0);
+  const [cargandoTurnos, setCargandoTurnos] = useState(true);
+  const [generando, setGenerando] = useState(false);
+  const [esAdmin, setEsAdmin] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [guardadoMsg, setGuardadoMsg] = useState<string | null>(null);
+
+  const [historial, setHistorial] = useState<HistorialItem[]>([]);
+  const [historialExpandido, setHistorialExpandido] = useState<number | null>(null);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+
+  useEffect(() => {
+    setEsAdmin(sessionStorage.getItem("admin-ok") === "1");
+  }, []);
 
   useEffect(() => {
     fetch("/api/turnos")
@@ -45,34 +65,61 @@ function EquiposContenido() {
       .then((data: TurnoOpt[]) => {
         setTurnos(data);
         if (!turnoActual && data.length > 0) {
-          setTurnoActual(data[0].id);
+          const primerActivo = data.find((t) => t.activo !== false) ?? data[0];
+          setTurnoActual(primerActivo.id);
         }
+        setCargandoTurnos(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function generar(t: string) {
-    if (!t) return;
-    setRegenerando(true);
-    setCargando(intentos === 0);
-    const r = await fetch(`/api/equipos?turno=${t}`);
+  async function generar() {
+    if (!turnoActual) return;
+    setGenerando(true);
+    setResultado(null);
+    const r = await fetch(`/api/equipos?turno=${turnoActual}`);
     const data = await r.json();
     setResultado(data);
-    setCargando(false);
-    setRegenerando(false);
-    setIntentos((n) => n + 1);
+    setGenerando(false);
+  }
+
+  async function cargarHistorial() {
+    if (!turnoActual) return;
+    setCargandoHistorial(true);
+    const r = await fetch(`/api/historial?turno=${turnoActual}&limit=10`);
+    if (r.ok) {
+      const data = await r.json();
+      setHistorial(data);
+    } else {
+      setHistorial([]);
+    }
+    setCargandoHistorial(false);
   }
 
   useEffect(() => {
-    if (turnoActual) generar(turnoActual);
+    if (!turnoActual || cargandoTurnos) return;
+    cargarHistorial();
+    setResultado(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [turnoActual]);
+  }, [turnoActual, cargandoTurnos]);
 
   const turnosActivos = turnos.filter((t) => t.activo !== false);
-  const turnoNombre =
-    turnos.find((t) => t.id === turnoActual)?.nombre ?? "Turno";
+  const turnoNombre = turnos.find((t) => t.id === turnoActual)?.nombre ?? "Turno";
 
-  if (cargando)
+  function formatearFecha(ms: number) {
+    try {
+      return new Date(ms).toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "—";
+    }
+  }
+
+  if (cargandoTurnos)
     return (
       <div className="contenedor">
         <div className="marca">
@@ -80,55 +127,11 @@ function EquiposContenido() {
           Fútbol Viernes
         </div>
         <h1>Equipos</h1>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "50vh",
-          }}
-        >
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                border: "3px solid rgba(26, 122, 76, 0.12)",
-                borderTopColor: "var(--verde-primario)",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-                margin: "0 auto 16px",
-              }}
-            />
-            <p className="subtitulo" style={{ margin: 0 }}>
-              Calculando equipos equilibrados...
-            </p>
-          </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "40vh" }}>
+          <div style={{ width: 40, height: 40, border: "3px solid rgba(15,157,88,0.12)", borderTopColor: "var(--acento)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         </div>
       </div>
     );
-
-  if (resultado?.error)
-    return (
-      <div className="contenedor">
-        <div className="marca">
-          <span className="punto" />
-          Fútbol Viernes
-        </div>
-        <h1>Equipos — {turnoNombre}</h1>
-        <p className="subtitulo">{resultado.error}</p>
-        <button
-          className="boton-secundario"
-          onClick={() => generar(turnoActual)}
-          disabled={regenerando}
-        >
-          {regenerando ? "Recalculando..." : "Reintentar"}
-        </button>
-      </div>
-    );
-
-  const diferencia = resultado?.diferencia ?? 0;
-  const diferenciaMenor = diferencia === 0;
 
   return (
     <div className="contenedor">
@@ -138,19 +141,12 @@ function EquiposContenido() {
       </div>
       <h1>Equipos — {turnoNombre}</h1>
       <p className="subtitulo">
-        Reparto equilibrado con los jugadores confirmados
+        Genera el reparto con los jugadores confirmados del turno
       </p>
 
       {/* Selector de turno */}
       {turnosActivos.length > 1 && (
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginBottom: 16,
-            flexWrap: "wrap",
-          }}
-        >
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           {turnosActivos.map((t) => (
             <button
               key={t.id}
@@ -158,11 +154,7 @@ function EquiposContenido() {
               onClick={() => setTurnoActual(t.id)}
               style={
                 t.id === turnoActual
-                  ? {
-                      background: "var(--verde-primario)",
-                      color: "#fff",
-                      border: "none",
-                    }
+                  ? { background: "var(--acento)", color: "#fff", border: "none" }
                   : {}
               }
             >
@@ -172,110 +164,203 @@ function EquiposContenido() {
         </div>
       )}
 
-      <div
-        className="tarjeta"
-        style={{
-          textAlign: "center",
-          marginBottom: 16,
-          animation: "entrar 0.4s ease-out both",
-        }}
-      >
-        <span className="subtitulo" style={{ margin: 0, display: "block" }}>
-          Diferencia entre equipos
-        </span>
-        <strong
-          style={{
-            fontFamily: "var(--font-fraunces), serif",
-            fontSize: "2rem",
-            fontWeight: 600,
-            color: diferenciaMenor
-              ? "var(--verde-primario)"
-              : "var(--verde-texto)",
-            display: "block",
-            marginTop: 4,
-          }}
-        >
-          {diferencia} pts
-        </strong>
-        {diferenciaMenor && (
-          <span
-            style={{
-              display: "inline-block",
-              marginTop: 6,
-              fontSize: "0.78rem",
-              fontWeight: 600,
-              color: "var(--verde-primario)",
-              background: "var(--verde-niebla)",
-              padding: "3px 12px",
-              borderRadius: 999,
-            }}
-          >
-            Equipos perfectos
-          </span>
-        )}
+      {/* Botón generar */}
+      <div className="tarjeta animar-entrada animar-retraso-2" style={{ textAlign: "center" }}>
+        <button onClick={generar} disabled={generando || !turnoActual}>
+          {generando ? "Calculando..." : resultado && !resultado.error ? "Regenerar equipos" : "Generar equipos"}
+        </button>
       </div>
 
-      <div className="equipos-grid" key={intentos}>
-        <div
-          className="tarjeta"
-          style={{ animation: "entrar 0.5s ease-out both" }}
-        >
-          <div className="total-equipo">Equipo A — {resultado?.totalA}</div>
-          {resultado?.equipoA.map((j, i) => (
-            <div
-              className="jugador-fila"
-              key={j.id}
-              style={{ animation: `entrar 0.4s ease-out ${0.05 * i}s both` }}
-            >
-              <span>
-                {j.nombre}
-                <span className={`chip chip-${j.posicion}`}>{j.posicion}</span>
-              </span>
-              <AnilloProgreso
-                valor={j.notaPosicion}
-                size={44}
-                grosor={4}
-                color="var(--verde-primario)"
-              />
-            </div>
-          ))}
+      {/* Error */}
+      {resultado?.error && (
+        <div className="tarjeta animar-entrada animar-retraso-2">
+          <p className="subtitulo" style={{ margin: 0 }}>{resultado.error}</p>
         </div>
+      )}
 
-        <div
-          className="tarjeta"
-          style={{ animation: "entrar 0.5s ease-out 0.1s both" }}
-        >
-          <div className="total-equipo">Equipo B — {resultado?.totalB}</div>
-          {resultado?.equipoB.map((j, i) => (
-            <div
-              className="jugador-fila"
-              key={j.id}
+      {/* Resultado */}
+      {resultado && !resultado.error && (
+        <>
+          <div
+            className="tarjeta"
+            style={{ textAlign: "center", marginBottom: 16, animation: "entrar 0.4s ease-out both" }}
+          >
+            <span className="subtitulo" style={{ margin: 0, display: "block" }}>
+              Diferencia entre equipos
+            </span>
+            <strong
               style={{
-                animation: `entrar 0.4s ease-out ${0.05 * i + 0.1}s both`,
+                fontFamily: "var(--font-fraunces), serif",
+                fontSize: "2rem",
+                fontWeight: 600,
+                color: resultado.diferencia === 0 ? "var(--acento)" : "var(--texto)",
+                display: "block",
+                marginTop: 4,
               }}
             >
-              <span>
-                {j.nombre}
-                <span className={`chip chip-${j.posicion}`}>{j.posicion}</span>
+              {resultado.diferencia} pts
+            </strong>
+            {resultado.diferencia === 0 && (
+              <span
+                style={{
+                  display: "inline-block",
+                  marginTop: 6,
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  color: "var(--acento)",
+                  background: "var(--verde-niebla)",
+                  padding: "3px 12px",
+                  borderRadius: 999,
+                }}
+              >
+                Equipos perfectos
               </span>
-              <AnilloProgreso
-                valor={j.notaPosicion}
-                size={44}
-                grosor={4}
-                color="var(--verde-primario)"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+            )}
+          </div>
 
-      <button
-        onClick={() => generar(turnoActual)}
-        disabled={regenerando}
-        style={{ marginTop: 8 }}
-      >
-        {regenerando ? "Recalculando..." : "Regenerar equipos"}
-      </button>
+          <div className="equipos-grid" key={resultado.equipoA.length + "-" + resultado.equipoB.length}>
+            <div className="tarjeta" style={{ animation: "entrar 0.5s ease-out both" }}>
+              <div className="total-equipo">Equipo A — {resultado.totalA}</div>
+              {resultado.equipoA.map((j, i) => (
+                <div
+                  className="jugador-fila"
+                  key={j.id}
+                  style={{ animation: `entrar 0.4s ease-out ${0.05 * i}s both` }}
+                >
+                  <span>
+                    {j.nombre}
+                    <span className={`chip chip-${j.posicion}`}>{j.posicion}</span>
+                  </span>
+                  <AnilloProgreso valor={j.notaPosicion} size={44} grosor={4} color="var(--acento)" />
+                </div>
+              ))}
+            </div>
+
+            <div className="tarjeta" style={{ animation: "entrar 0.5s ease-out 0.1s both" }}>
+              <div className="total-equipo">Equipo B — {resultado.totalB}</div>
+              {resultado.equipoB.map((j, i) => (
+                <div
+                  className="jugador-fila"
+                  key={j.id}
+                  style={{ animation: `entrar 0.4s ease-out ${0.05 * i + 0.1}s both` }}
+                >
+                  <span>
+                    {j.nombre}
+                    <span className={`chip chip-${j.posicion}`}>{j.posicion}</span>
+                  </span>
+                  <AnilloProgreso valor={j.notaPosicion} size={44} grosor={4} color="var(--acento)" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {esAdmin && (
+            <div style={{ marginBottom: 24, textAlign: "center" }}>
+              <button
+                className="boton-secundario"
+                onClick={async () => {
+                  setGuardando(true);
+                  setGuardadoMsg(null);
+                  const ligero = (arr: any[]) =>
+                    arr.map((j) => ({ id: j.id, nombre: j.nombre, posicion: j.posicion, notaPosicion: j.notaPosicion }));
+                  const r = await fetch("/api/historial", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-admin-secret": process.env.NEXT_PUBLIC_ADMIN_SECRET || "" },
+                    body: JSON.stringify({
+                      turnoId: turnoActual,
+                      turnoNombre,
+                      totalA: resultado.totalA,
+                      totalB: resultado.totalB,
+                      diferencia: resultado.diferencia,
+                      equipoA: ligero(resultado.equipoA),
+                      equipoB: ligero(resultado.equipoB),
+                    }),
+                  });
+                  setGuardando(false);
+                  setGuardadoMsg(r.ok ? "Guardado en historial ✅" : "Error al guardar");
+                  setTimeout(() => setGuardadoMsg(null), 2500);
+                  cargarHistorial();
+                }}
+                disabled={guardando}
+                style={{ fontSize: "0.85rem", padding: "10px 16px" }}
+              >
+                {guardando ? "Guardando..." : "Guardar en historial"}
+              </button>
+              {guardadoMsg && (
+                <div style={{ marginTop: 8, fontSize: "0.82rem", color: "var(--acento)" }}>{guardadoMsg}</div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Dashboard historial anterior */}
+      <div className="tarjeta animar-entrada animar-retraso-3">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <h2 style={{ margin: 0 }}>Partidas anteriores</h2>
+          <button className="copiar-btn" onClick={cargarHistorial} disabled={cargandoHistorial} style={{ fontSize: "0.72rem" }}>
+            {cargandoHistorial ? "Cargando..." : "Refrescar"}
+          </button>
+        </div>
+        {historial.length === 0 ? (
+          <p className="subtitulo" style={{ margin: 0 }}>
+            Aún no hay equipos guardados de este turno. Genera uno y guárdalo como referencia.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {historial.map((h) => (
+              <div key={h.id} style={{ border: "1px solid var(--cristal-borde)", borderRadius: "var(--radio-sm)", padding: 12 }}>
+                <button
+                  onClick={() => setHistorialExpandido(historialExpandido === h.id ? null : h.id)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--texto)",
+                    fontWeight: 600,
+                    fontSize: "0.88rem",
+                  }}
+                >
+                  <span>{formatearFecha(h.fecha)}</span>
+                  <span style={{ color: h.diferencia === 0 ? "var(--acento)" : "var(--texto-suave)", fontSize: "0.8rem" }}>
+                    A {h.totalA} — B {h.totalB} (Δ {h.diferencia})
+                  </span>
+                </button>
+                {historialExpandido === h.id && (
+                  <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--texto-suave)", marginBottom: 6 }}>
+                        Equipo A — {h.totalA}
+                      </div>
+                      {h.equipoA.map((j) => (
+                        <div key={j.id} style={{ fontSize: "0.82rem", marginBottom: 2, display: "flex", justifyContent: "space-between" }}>
+                          <span>{j.nombre} <span className={`chip chip-${j.posicion}`} style={{ fontSize: "0.6rem" }}>{j.posicion}</span></span>
+                          <span style={{ color: "var(--texto-suave)" }}>{j.notaPosicion}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--texto-suave)", marginBottom: 6 }}>
+                        Equipo B — {h.totalB}
+                      </div>
+                      {h.equipoB.map((j) => (
+                        <div key={j.id} style={{ fontSize: "0.82rem", marginBottom: 2, display: "flex", justifyContent: "space-between" }}>
+                          <span>{j.nombre} <span className={`chip chip-${j.posicion}`} style={{ fontSize: "0.6rem" }}>{j.posicion}</span></span>
+                          <span style={{ color: "var(--texto-suave)" }}>{j.notaPosicion}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

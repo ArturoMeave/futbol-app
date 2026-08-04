@@ -6,6 +6,7 @@ import {
   getTurnosActivos,
   upsertVoto,
   setConfirmado,
+  Posicion,
 } from "@/lib/db";
 
 // Devuelve quién es el votante, a quién puede votar, su estado de confirmación
@@ -71,6 +72,7 @@ export async function POST(
     tecnica: number;
     remate: number;
     defensa: number;
+    posicionVotada: Posicion;
   }>;
 
   for (const v of votos) {
@@ -89,6 +91,7 @@ export async function POST(
       tecnica: v.tecnica,
       remate: v.remate,
       defensa: v.defensa,
+      posicionVotada: v.posicionVotada ?? null,
     });
   }
 

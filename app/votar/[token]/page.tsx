@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import AnilloProgreso from "@/lib/AnilloProgreso";
+import { POSICIONES, POSICION_LABELS, Posicion } from "@/lib/db";
 
 interface Objetivo {
   id: string;
@@ -26,6 +28,7 @@ const ATRIBUTOS_INFO: { key: keyof Atributos; label: string }[] = [
 ];
 
 export default function VotarPage({ params }: { params: { token: string } }) {
+  const router = useRouter();
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [votanteNombre, setVotanteNombre] = useState("");
@@ -33,11 +36,32 @@ export default function VotarPage({ params }: { params: { token: string } }) {
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
   const [indice, setIndice] = useState(0);
   const [valores, setValores] = useState<Record<string, Atributos>>({});
+  const [posVotadas, setPosVotadas] = useState<Record<string, Posicion>>({});
   const [enviando, setEnviando] = useState(false);
   const [terminado, setTerminado] = useState(false);
   const [direccion, setDireccion] = useState<1 | -1>(1);
   const [confirmado, setConfirmado] = useState(false);
   const [toggleConf, setToggleConf] = useState(false);
+
+  // Pegar link alternativo si el token no es válido
+  const [linkAlt, setLinkAlt] = useState("");
+  const [errorAlt, setErrorAlt] = useState("");
+
+  function usarLinkAlt() {
+    setErrorAlt("");
+    const txt = linkAlt.trim();
+    if (!txt) {
+      setErrorAlt("Pega tu link de votación.");
+      return;
+    }
+    const match = txt.match(/\/votar\/([A-Za-z0-9-]+)/);
+    if (!match) {
+      setErrorAlt("Link no válido. Debe acabar en /votar/TOKEN");
+      return;
+    }
+    localStorage.setItem("futbol-token", match[1]);
+    router.push(`/votar/${match[1]}`);
+  }
 
   useEffect(() => {
     // Guardar token en localStorage para recordar el link
@@ -53,6 +77,7 @@ export default function VotarPage({ params }: { params: { token: string } }) {
           setTurnoNombre(data.turnoNombre);
           setObjetivos(data.objetivos);
           const iniciales: Record<string, Atributos> = {};
+          const posIniciales: Record<string, Posicion> = {};
           data.objetivos.forEach((o: Objetivo) => {
             iniciales[o.id] = {
               ritmo: 5,
@@ -61,8 +86,10 @@ export default function VotarPage({ params }: { params: { token: string } }) {
               remate: 5,
               defensa: 5,
             };
+            posIniciales[o.id] = (o.posicion as Posicion) || "MC";
           });
           setValores(iniciales);
+          setPosVotadas(posIniciales);
         }
         setCargando(false);
       });
@@ -107,6 +134,36 @@ export default function VotarPage({ params }: { params: { token: string } }) {
         </div>
         <h1>Link no válido</h1>
         <p className="subtitulo">{error}</p>
+
+        <div className="tarjeta">
+          <h2>Tengo mi link</h2>
+          <p className="subtitulo" style={{ marginBottom: 12, fontSize: "0.9rem" }}>
+            Pega aquí el link que te pasó el admin para entrar a tu votación.
+          </p>
+          {errorAlt && (
+            <p
+              style={{
+                color: "#dc2626",
+                fontSize: "0.85rem",
+                margin: "8px 0",
+                background: "rgba(220, 38, 38, 0.08)",
+                padding: "10px 14px",
+                borderRadius: "var(--radio-sm)",
+              }}
+            >
+              {errorAlt}
+            </p>
+          )}
+          <input
+            className="campo-input"
+            value={linkAlt}
+            onChange={(e) => setLinkAlt(e.target.value)}
+            placeholder="https://futbol.../votar/tok-..."
+          />
+          <button onClick={usarLinkAlt} style={{ marginTop: 12 }}>
+            Entrar a mi votación →
+          </button>
+        </div>
       </div>
     );
 
@@ -157,6 +214,7 @@ export default function VotarPage({ params }: { params: { token: string } }) {
       const votos = objetivos.map((o) => ({
         objetivoId: o.id,
         ...valores[o.id],
+        posicionVotada: posVotadas[o.id] ?? "MC",
       }));
       await fetch(`/api/votar/${params.token}`, {
         method: "POST",
@@ -294,6 +352,37 @@ export default function VotarPage({ params }: { params: { token: string } }) {
               {actual.posicion}
             </span>
           </h2>
+
+          {/* Posición votada */}
+          <div style={{ marginBottom: 18 }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                color: "var(--texto-suave)",
+                marginBottom: 8,
+              }}
+            >
+              ¿En qué posición le pondrías?
+            </label>
+            <select
+              className="campo-select"
+              value={posVotadas[actual.id] ?? "MC"}
+              onChange={(e) =>
+                setPosVotadas((prev) => ({
+                  ...prev,
+                  [actual.id]: e.target.value as Posicion,
+                }))
+              }
+            >
+              {POSICIONES.map((p) => (
+                <option key={p} value={p}>
+                  {p} — {POSICION_LABELS[p]}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {ATRIBUTOS_INFO.map(({ key, label }) => (
             <div className="fila-atributo" key={key}>

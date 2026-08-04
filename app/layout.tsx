@@ -1,6 +1,7 @@
 import "./global.css";
 import { ReactNode } from "react";
 import { Fraunces, Manrope } from "next/font/google";
+import AppShell from "@/lib/AppShell";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -32,7 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <span className="mancha mancha-3" />
           <span className="mancha mancha-4" />
         </div>
-        {children}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

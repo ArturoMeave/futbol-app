@@ -1,4 +1,10 @@
-import { DB, Jugador, Posicion, Voto } from "./db";
+import { DB, Jugador, Posicion, Voto, POSICIONES, posicionEfectivaVotos } from "./db";
+
+function conteoVacio(): Record<Posicion, number> {
+  const r = {} as Record<Posicion, number>;
+  for (const p of POSICIONES) r[p] = 0;
+  return r;
+}
 
 export interface Atributos {
   ritmo: number;
@@ -10,8 +16,9 @@ export interface Atributos {
 
 export interface JugadorConNota extends Jugador {
   atributos: Atributos;
-  notaPosicion: number; // 1-10, específica de su posición asignada
+  notaPosicion: number; // 1-10, específica de su posición efectiva
   numVotos: number;
+  posicionFicha: Posicion; // posición asignada en la ficha
 }
 
 // Promedia todos los votos recibidos por un jugador
@@ -40,13 +47,17 @@ function promedioAtributos(votos: Voto[], jugadorId: string): Atributos {
   };
 }
 
-// Pesos de cada atributo según la posición (ajusta a tu gusto,
-// cada fila debería sumar aprox. 1)
+// Pesos de cada atributo según la posición (cada fila suma 1)
 const PESOS: Record<Posicion, Atributos> = {
-  DEL: { remate: 0.4, ritmo: 0.3, tecnica: 0.3, resistencia: 0, defensa: 0 },
-  MED: { tecnica: 0.4, resistencia: 0.3, ritmo: 0.3, remate: 0, defensa: 0 },
-  DEF: { defensa: 0.5, resistencia: 0.3, ritmo: 0.2, remate: 0, tecnica: 0 },
   POR: { defensa: 0.3, tecnica: 0.3, resistencia: 0.2, ritmo: 0.2, remate: 0 },
+  DFC: { defensa: 0.5, resistencia: 0.3, ritmo: 0.2, tecnica: 0, remate: 0 },
+  LD:  { ritmo: 0.4, defensa: 0.3, resistencia: 0.2, tecnica: 0.1, remate: 0 },
+  LI:  { ritmo: 0.4, defensa: 0.3, resistencia: 0.2, tecnica: 0.1, remate: 0 },
+  MCD: { defensa: 0.3, tecnica: 0.3, resistencia: 0.3, ritmo: 0.1, remate: 0 },
+  MC:  { tecnica: 0.4, resistencia: 0.3, ritmo: 0.3, remate: 0, defensa: 0 },
+  MP:  { tecnica: 0.4, remate: 0.3, ritmo: 0.3, defensa: 0, resistencia: 0 },
+  EX:  { ritmo: 0.4, tecnica: 0.3, remate: 0.3, defensa: 0, resistencia: 0 },
+  DEL: { remate: 0.4, ritmo: 0.3, tecnica: 0.3, defensa: 0, resistencia: 0 },
 };
 
 function notaPorPosicion(atributos: Atributos, posicion: Posicion): number {
@@ -66,10 +77,14 @@ export function calcularJugadoresConNota(db: DB, turno: string): JugadorConNota[
     .map((j) => {
       const atributos = promedioAtributos(db.votos, j.id);
       const numVotos = db.votos.filter((v) => v.objetivoId === j.id).length;
+      // Posición efectiva: moda de los votos recibidos, fallback a la ficha
+      const efectiva = posicionEfectivaVotos(db.votos, j.id) ?? j.posicion;
       return {
         ...j,
+        posicion: efectiva, // para que el reparto use la efectiva
+        posicionFicha: j.posicion,
         atributos,
-        notaPosicion: notaPorPosicion(atributos, j.posicion),
+        notaPosicion: notaPorPosicion(atributos, efectiva),
         numVotos,
       };
     });
@@ -95,7 +110,17 @@ export function generarEquipos(
   jugadores: JugadorConNota[],
   intentos = 300
 ): ResultadoEquipos {
-  const posiciones: Posicion[] = ["POR", "DEF", "MED", "DEL"];
+  const posiciones: Posicion[] = [
+    "POR",
+    "LD",
+    "DFC",
+    "LI",
+    "MCD",
+    "MC",
+    "MP",
+    "EX",
+    "DEL",
+  ];
 
   // Si el número total de jugadores es impar, dejamos uno fuera (el de nota
   // más baja global) para garantizar N vs N. Si es par, se reparten todos.
@@ -109,19 +134,9 @@ export function generarEquipos(
   // Cuántos jugadores de cada posición deben ir a cada equipo (reparto
   // equilibrado por posición). Si una posición tiene un número impar, el
   // "extra" se asigna de forma alterna entre A y B.
-  const porPosicion: Record<Posicion, number> = {
-    POR: 0,
-    DEF: 0,
-    MED: 0,
-    DEL: 0,
-  };
+  const porPosicion: Record<Posicion, number> = conteoVacio();
 
-  const numPorPosicion: Record<Posicion, number> = {
-    POR: 0,
-    DEF: 0,
-    MED: 0,
-    DEL: 0,
-  };
+  const numPorPosicion: Record<Posicion, number> = conteoVacio();
 
   for (const pos of posiciones) {
     numPorPosicion[pos] = pool.filter((j) => j.posicion === pos).length;
@@ -133,19 +148,9 @@ export function generarEquipos(
     const equipoA: JugadorConNota[] = [];
     const equipoB: JugadorConNota[] = [];
     // Lleva cuántos de cada posición ya tiene el equipo A
-    const cuentaA: Record<Posicion, number> = {
-      POR: 0,
-      DEF: 0,
-      MED: 0,
-      DEL: 0,
-    };
+    const cuentaA: Record<Posicion, number> = conteoVacio();
     // Cuántos de cada posición van a cada equipo
-    const metaA: Record<Posicion, number> = {
-      POR: 0,
-      DEF: 0,
-      MED: 0,
-      DEL: 0,
-    };
+    const metaA: Record<Posicion, number> = conteoVacio();
 
     // Repartir meta por posición: base mitad + reparto del resto
     for (const pos of posiciones) {

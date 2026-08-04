@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import SelectPosicion from "@/lib/SelectPosicion";
+import { Posicion } from "@/lib/db";
 
 interface Inscrito {
   id: string;
@@ -24,9 +26,29 @@ export default function UnirsePage() {
   const [error, setError] = useState("");
 
   const [nombre, setNombre] = useState("");
-  const [posicion, setPosicion] = useState<"POR" | "DEF" | "MED" | "DEL">("MED");
+  const [posicion, setPosicion] = useState<Posicion>("MC");
   const [turno, setTurno] = useState("");
   const [palabra, setPalabra] = useState("");
+
+  const [linkPegado, setLinkPegado] = useState("");
+  const [errorLink, setErrorLink] = useState("");
+
+  function usarLink() {
+    setErrorLink("");
+    const txt = linkPegado.trim();
+    if (!txt) {
+      setErrorLink("Pega tu link de votación.");
+      return;
+    }
+    const match = txt.match(/\/votar\/([A-Za-z0-9-]+)/);
+    if (!match) {
+      setErrorLink("Link no válido. Debe acabar en /votar/TOKEN");
+      return;
+    }
+    const token = match[1];
+    localStorage.setItem("futbol-token", token);
+    router.push(`/votar/${token}`);
+  }
 
   useEffect(() => {
     fetch("/api/unirse")
@@ -132,6 +154,37 @@ export default function UnirsePage() {
         </div>
       )}
 
+      {/* Pega tu link */}
+      <div className="tarjeta animar-entrada animar-retraso-2">
+        <h2>Tengo mi link</h2>
+        <p className="subtitulo" style={{ marginBottom: 12, fontSize: "0.9rem" }}>
+          Si el admin te pasó un link de votación, pégalo aquí para entrar directamente.
+        </p>
+        {errorLink && (
+          <p
+            style={{
+              color: "#dc2626",
+              fontSize: "0.85rem",
+              margin: "8px 0",
+              background: "rgba(220, 38, 38, 0.08)",
+              padding: "10px 14px",
+              borderRadius: "var(--radio-sm)",
+            }}
+          >
+            {errorLink}
+          </p>
+        )}
+        <input
+          className="campo-input"
+          value={linkPegado}
+          onChange={(e) => setLinkPegado(e.target.value)}
+          placeholder="https://futbol.../votar/tok-..."
+        />
+        <button onClick={usarLink} style={{ marginTop: 12 }}>
+          Entrar a mi votación →
+        </button>
+      </div>
+
       {/* Formulario */}
       <form onSubmit={registrar} className="tarjeta animar-entrada animar-retraso-2">
         <h2>Tus datos</h2>
@@ -163,18 +216,7 @@ export default function UnirsePage() {
 
         <div className="fila-atributo" style={{ marginBottom: 12 }}>
           <label>Posición</label>
-          <select
-            className="campo-select"
-            value={posicion}
-            onChange={(e) =>
-              setPosicion(e.target.value as "POR" | "DEF" | "MED" | "DEL")
-            }
-          >
-            <option value="POR">Portero</option>
-            <option value="DEF">Defensa</option>
-            <option value="MED">Medio</option>
-            <option value="DEL">Delantero</option>
-          </select>
+          <SelectPosicion value={posicion} onChange={setPosicion} />
         </div>
 
         <div className="fila-atributo" style={{ marginBottom: 12 }}>
