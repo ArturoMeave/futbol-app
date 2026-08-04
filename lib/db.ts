@@ -249,18 +249,26 @@ export async function getVotosDeVotante(votanteId: string): Promise<Voto[]> {
   return data as Voto[];
 }
 
-export async function upsertVoto(v: Voto): Promise<void> {
-  await sql`
-    INSERT INTO votos (votante_id, objetivo_id, ritmo, resistencia, tecnica, remate, defensa, posicion_votada)
-    VALUES (${v.votanteId}, ${v.objetivoId}, ${v.ritmo}, ${v.resistencia}, ${v.tecnica}, ${v.remate}, ${v.defensa}, ${v.posicionVotada ?? null})
-    ON CONFLICT (votante_id, objetivo_id) DO UPDATE SET
-      ritmo = EXCLUDED.ritmo,
-      resistencia = EXCLUDED.resistencia,
-      tecnica = EXCLUDED.tecnica,
-      remate = EXCLUDED.remate,
-      defensa = EXCLUDED.defensa,
-      posicion_votada = EXCLUDED.posicion_votada
-  `;
+export async function upsertVotosBatch(votos: Voto[]): Promise<void> {
+  // Si nos mandan una lista vacía, no hacemos nada para evitar errores
+  if (votos.length === 0) return;
+
+  // Promise.all es nuestro "director de orquesta" que envía todo a la vez
+  await Promise.all(
+    votos.map((v) =>
+      sql`
+        INSERT INTO votos (votante_id, objetivo_id, ritmo, resistencia, tecnica, remate, defensa, posicion_votada)
+        VALUES (${v.votanteId}, ${v.objetivoId}, ${v.ritmo}, ${v.resistencia}, ${v.tecnica}, ${v.remate}, ${v.defensa}, ${v.posicionVotada ?? null})
+        ON CONFLICT (votante_id, objetivo_id) DO UPDATE SET
+          ritmo = EXCLUDED.ritmo,
+          resistencia = EXCLUDED.resistencia,
+          tecnica = EXCLUDED.tecnica,
+          remate = EXCLUDED.remate,
+          defensa = EXCLUDED.defensa,
+          posicion_votada = EXCLUDED.posicion_votada
+      `
+    )
+  );
 }
 
 // Moda de la posición votada que ha recibido un jugador.

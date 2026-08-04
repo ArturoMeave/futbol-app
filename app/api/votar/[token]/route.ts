@@ -4,7 +4,7 @@ import {
   getJugadores,
   getVotosDeVotante,
   getTurnosActivos,
-  upsertVoto,
+  upsertVotosBatch,
   setConfirmado,
   Posicion,
 } from "@/lib/db";
@@ -75,6 +75,7 @@ export async function POST(
     posicionVotada: Posicion;
   }>;
 
+  // 1. Validamos que los datos sean correctos (del 1 al 10)
   for (const v of votos) {
     const atributos = [v.ritmo, v.resistencia, v.tecnica, v.remate, v.defensa];
     if (atributos.some((a) => a < 1 || a > 10 || !Number.isInteger(a))) {
@@ -83,17 +84,22 @@ export async function POST(
         { status: 400 }
       );
     }
-    await upsertVoto({
-      votanteId: votante.id,
-      objetivoId: v.objetivoId,
-      ritmo: v.ritmo,
-      resistencia: v.resistencia,
-      tecnica: v.tecnica,
-      remate: v.remate,
-      defensa: v.defensa,
-      posicionVotada: v.posicionVotada ?? null,
-    });
   }
+
+  // 2. Empaquetamos todo asociándolo al ID del votante que sacamos del token
+  const votosParaGuardar = votos.map((v) => ({
+    votanteId: votante.id,
+    objetivoId: v.objetivoId,
+    ritmo: v.ritmo,
+    resistencia: v.resistencia,
+    tecnica: v.tecnica,
+    remate: v.remate,
+    defensa: v.defensa,
+    posicionVotada: v.posicionVotada ?? null,
+  }));
+
+  // 3. Inyección en bloque
+  await upsertVotosBatch(votosParaGuardar);
 
   return NextResponse.json({ ok: true });
 }

@@ -3,7 +3,7 @@ import {
   getJugadores,
   getTurnosActivos,
   getVotosDeVotante,
-  upsertVoto,
+  upsertVotosBatch,
   setConfirmado,
   Posicion,
 } from "@/lib/db";
@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Falta votanteId" }, { status: 400 });
   }
 
+  // 1. Primero, validamos todos los votos para asegurarnos de que nadie hace trampas
   for (const v of votos) {
     const atributos = [v.ritmo, v.resistencia, v.tecnica, v.remate, v.defensa];
     if (atributos.some((a) => a < 1 || a > 10 || !Number.isInteger(a))) {
@@ -85,17 +86,22 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    await upsertVoto({
-      votanteId,
-      objetivoId: v.objetivoId,
-      ritmo: v.ritmo,
-      resistencia: v.resistencia,
-      tecnica: v.tecnica,
-      remate: v.remate,
-      defensa: v.defensa,
-      posicionVotada: v.posicionVotada ?? null,
-    });
   }
+
+  // 2. Preparamos la caja con todos los votos empaquetados
+  const votosParaGuardar = votos.map((v) => ({
+    votanteId: votanteId, // Añadimos quién vota a cada paquete
+    objetivoId: v.objetivoId,
+    ritmo: v.ritmo,
+    resistencia: v.resistencia,
+    tecnica: v.tecnica,
+    remate: v.remate,
+    defensa: v.defensa,
+    posicionVotada: v.posicionVotada ?? null,
+  }));
+
+  // 3. Enviamos el camión de reparto de un solo viaje
+  await upsertVotosBatch(votosParaGuardar);
 
   return NextResponse.json({ ok: true });
 }
