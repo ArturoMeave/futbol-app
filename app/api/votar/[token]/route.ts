@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getJugadorPorToken, getJugadores, getVotosDeVotante, upsertVoto } from "@/lib/db";
+import {
+  getJugadorPorToken,
+  getJugadores,
+  getVotosDeVotante,
+  getTurnosActivos,
+  upsertVoto,
+  setConfirmado,
+} from "@/lib/db";
 
-// Devuelve quién es el votante y a quién puede votar (todos menos él mismo,
-// del mismo turno)
+// Devuelve quién es el votante, a quién puede votar, su estado de confirmación
+// y el nombre legible de su turno
 export async function GET(
   _req: NextRequest,
   { params }: { params: { token: string } }
@@ -13,10 +20,13 @@ export async function GET(
     return NextResponse.json({ error: "Link no válido" }, { status: 404 });
   }
 
-  const [jugadores, votosHechos] = await Promise.all([
+  const [jugadores, votosHechos, turnos] = await Promise.all([
     getJugadores(),
     getVotosDeVotante(votante.id),
+    getTurnosActivos(),
   ]);
+
+  const turnosMap = new Map(turnos.map((t) => [t.id, t.nombre]));
 
   const objetivos = jugadores.filter(
     (j) => j.turno === votante.turno && j.id !== votante.id
@@ -27,7 +37,12 @@ export async function GET(
   const pendientes = objetivos.filter((o) => !yaVotadosIds.has(o.id));
 
   return NextResponse.json({
-    votante: { id: votante.id, nombre: votante.nombre },
+    votante: {
+      id: votante.id,
+      nombre: votante.nombre,
+      confirmado: votante.confirmado,
+    },
+    turnoNombre: turnosMap.get(votante.turno) ?? votante.turno,
     objetivos: objetivos.map((o) => ({
       id: o.id,
       nombre: o.nombre,
@@ -78,4 +93,24 @@ export async function POST(
   }
 
   return NextResponse.json({ ok: true });
+}
+
+// PATCH: confirmar o desconfirmar asistencia
+// body: { confirmado: boolean }
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { token: string } }
+) {
+  const votante = await getJugadorPorToken(params.token);
+
+  if (!votante) {
+    return NextResponse.json({ error: "Link no válido" }, { status: 404 });
+  }
+
+  const body = await req.json();
+  const { confirmado } = body;
+
+  await setConfirmado(votante.id, Boolean(confirmado));
+
+  return NextResponse.json({ ok: true, confirmado: Boolean(confirmado) });
 }

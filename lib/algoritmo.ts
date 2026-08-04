@@ -60,7 +60,7 @@ function notaPorPosicion(atributos: Atributos, posicion: Posicion): number {
   return Math.round(nota * 10) / 10;
 }
 
-export function calcularJugadoresConNota(db: DB, turno: 1 | 2): JugadorConNota[] {
+export function calcularJugadoresConNota(db: DB, turno: string): JugadorConNota[] {
   return db.jugadores
     .filter((j) => j.turno === turno)
     .map((j) => {

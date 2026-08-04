@@ -1,24 +1,25 @@
 :root {
-  /* Paleta minimalista inspirada en referencias */
-  --fondo: #f0f4f8;
+  /* ── Paleta verde deportiva ── */
+  --fondo: #eef7f0;
   --fondo-elevado: #ffffff;
 
-  --texto: #1a1a2e;
-  --texto-suave: #6b7280;
+  --texto: #0f2e1c;
+  --texto-suave: #5b7568;
   --texto-invertido: #ffffff;
 
-  /* Acento elegante (azul noche) */
-  --acento: #1a1a2e;
-  --acento-hover: #2d2d44;
+  /* Acento principal — verde esmeralda potente */
+  --acento: #0f9d58;
+  --acento-hover: #0b7d46;
+  --acento-suave: rgba(15, 157, 88, 0.12);
 
-  /* Cristal / Glassmorphism */
-  --cristal-bg: rgba(255, 255, 255, 0.55);
-  --cristal-bg-fuerte: rgba(255, 255, 255, 0.78);
-  --cristal-borde: rgba(255, 255, 255, 0.6);
-  --sombra-cristal: 0 8px 32px rgba(26, 26, 46, 0.06);
-  --sombra-hover: 0 12px 40px rgba(26, 26, 46, 0.1);
+  /* Cristal con tinte verde */
+  --cristal-bg: rgba(255, 255, 255, 0.6);
+  --cristal-bg-fuerte: rgba(255, 255, 255, 0.82);
+  --cristal-borde: rgba(15, 46, 28, 0.08);
+  --sombra-cristal: 0 10px 40px rgba(15, 46, 28, 0.08);
+  --sombra-hover: 0 16px 50px rgba(15, 46, 28, 0.14);
 
-  /* Posiciones — colores pastel tipo referencias */
+  /* Posiciones — pastel editorial ((siguen siendo los anteriores) */
   --del-bg: #fecaca;
   --del-texto: #991b1b;
   --med-bg: #bfdbfe;
@@ -28,15 +29,21 @@
   --por-bg: #e9d5ff;
   --por-texto: #6b21a8;
 
+  /* Colores equipo */
+  --equipo-a: #0f9d58;
+  --equipo-b: #2d7d46;
+
   /* Radios grandes */
-  --radio-lg: 24px;
-  --radio-md: 16px;
+  --radio-lg: 28px;
+  --radio-md: 18px;
   --radio-sm: 12px;
 
-  /* Fallback para AnilloProgreso (lo actualizaremos luego) */
-  --verde-primario: var(--texto);
+  /* Variables legacy que usa el código existente */
+  --verde-primario: #0f9d58;
+  --verde-primario-oscuro: #0b7d46;
   --verde-texto: var(--texto);
-  --verde-niebla: rgba(26, 26, 46, 0.06);
+  --verde-niebla: #eaf5ee;
+  --texto-suave-deprecated: var(--texto-suave);
 }
 
 * {
@@ -85,7 +92,7 @@ body {
   height: 520px;
   background: radial-gradient(
     circle,
-    rgba(191, 219, 254, 0.7),
+    rgba(15, 157, 88, 0.35),
     transparent 70%
   );
   animation: flotar 20s ease-in-out infinite;
@@ -98,7 +105,7 @@ body {
   height: 620px;
   background: radial-gradient(
     circle,
-    rgba(233, 213, 255, 0.6),
+    rgba(134, 239, 172, 0.45),
     transparent 70%
   );
   animation: flotar 25s ease-in-out infinite reverse;
@@ -111,7 +118,7 @@ body {
   height: 420px;
   background: radial-gradient(
     circle,
-    rgba(254, 202, 202, 0.5),
+    rgba(234, 245, 238, 0.95),
     transparent 70%
   );
   animation: flotar 22s ease-in-out infinite 5s;
@@ -124,7 +131,7 @@ body {
   height: 340px;
   background: radial-gradient(
     circle,
-    rgba(253, 230, 138, 0.35),
+    rgba(190, 242, 100, 0.3),
     transparent 70%
   );
   animation: flotar 18s ease-in-out infinite 2s;
@@ -140,6 +147,25 @@ body {
   }
   66% {
     transform: translate(-20px, 20px) scale(0.95);
+  }
+}
+
+/* Spinner minimalista */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animación de fade lateral (para el carrusel de votación) */
+@keyframes entrar-lateral {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -160,17 +186,24 @@ body {
   font-family: var(--font-fraunces), serif;
   font-weight: 600;
   font-size: 1rem;
-  color: var(--texto);
+  color: var(--acento);
   margin-bottom: 24px;
   letter-spacing: -0.01em;
 }
 
 .marca .punto {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: var(--texto);
+  background: var(--acento);
   display: inline-block;
+  box-shadow: 0 0 0 4px var(--acento-suave);
+  animation: pulso 2.4s ease-in-out infinite;
+}
+
+@keyframes pulso {
+  0%, 100% { box-shadow: 0 0 0 4px var(--acento-suave); }
+  50% { box-shadow: 0 0 0 8px rgba(15, 157, 88, 0.06); }
 }
 
 /* ── Tipografía ── */
@@ -178,10 +211,20 @@ h1 {
   font-family: var(--font-fraunces), serif;
   font-weight: 600;
   font-size: clamp(2rem, 5vw, 2.8rem);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
   margin: 0 0 12px;
   color: var(--texto);
+}
+
+h1::after {
+  content: "";
+  display: block;
+  width: 48px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--acento), transparent);
+  border-radius: 999px;
+  margin-top: 16px;
 }
 
 h2 {
@@ -240,8 +283,8 @@ button,
 button:hover,
 .boton-primario:hover {
   background: var(--acento-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(26, 26, 46, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 157, 88, 0.32);
 }
 
 button:active {
@@ -252,12 +295,13 @@ button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .boton-secundario {
   background: transparent;
-  color: var(--texto);
-  border: 1.5px solid rgba(26, 26, 46, 0.1);
+  color: var(--acento);
+  border: 1.5px solid var(--acento-suave);
   padding: 14px 24px;
   border-radius: var(--radio-md);
   font-weight: 600;
@@ -268,8 +312,9 @@ button:disabled {
 }
 
 .boton-secundario:hover {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: rgba(26, 26, 46, 0.2);
+  background: var(--verde-niebla);
+  border-color: var(--acento);
+  transform: translateY(-1px);
 }
 
 /* ── Inputs ── */
@@ -318,33 +363,34 @@ button:disabled {
   appearance: none;
   height: 6px;
   border-radius: 6px;
-  background: rgba(26, 26, 46, 0.08);
+  background: rgba(15, 46, 28, 0.1);
   outline: none;
   cursor: pointer;
 }
 
 .fila-atributo input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--texto);
+  background: var(--acento);
   border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(26, 26, 46, 0.2);
+  box-shadow: 0 2px 10px rgba(15, 157, 88, 0.4);
   cursor: pointer;
   transition: transform 0.15s ease;
 }
 
 .fila-atributo input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
+  transform: scale(1.18);
 }
 
 .fila-atributo input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--texto);
+  background: var(--acento);
   border: 3px solid #fff;
+  box-shadow: 0 2px 10px rgba(15, 157, 88, 0.4);
   cursor: pointer;
 }
 
@@ -537,4 +583,39 @@ a {
 .animar-retraso-3 {
   animation-delay: 0.35s;
   opacity: 0;
+}
+
+/* ── Check final (votación enviada) ── */
+@keyframes checkPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+/* ── Transición lateral entre jugadores ── */
+@keyframes deslizar-1 {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes deslizar--1 {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }

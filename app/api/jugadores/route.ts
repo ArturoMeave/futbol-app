@@ -16,10 +16,7 @@ export async function GET() {
     const totalPosibles = jugadores.filter(
       (x) => x.turno === j.turno && x.id !== j.id
     ).length;
-    return {
-      ...j,
-      progresoVoto: totalPosibles > 0 ? votosHechos / totalPosibles : 0,
-    };
+    return { ...j, votosHechos, totalPosibles };
   });
   return NextResponse.json(jugadoresConEstado);
 }
@@ -41,6 +38,7 @@ export async function POST(req: NextRequest) {
     posicion,
     turno,
     token: `tok-${nombre.toLowerCase().replace(/\s+/g, "-")}-${nanoid(6)}`,
+    confirmado: false,
   };
   await insertJugador(nuevo);
 
@@ -53,8 +51,11 @@ export async function DELETE(req: NextRequest) {
   }
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Falta id" }, { status: 400 });
+  if (!id) {
+    return NextResponse.json({ error: "Falta id" }, { status: 400 });
+  }
 
   await deleteJugador(id);
+
   return NextResponse.json({ ok: true });
 }

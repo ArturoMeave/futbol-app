@@ -1,13 +1,22 @@
-import { supabase } from "./supabase";
+import { neon } from "@neondatabase/serverless";
+import { nanoid } from "nanoid";
 
 export type Posicion = "POR" | "DEF" | "MED" | "DEL";
+
+export interface Turno {
+  id: string;
+  nombre: string;
+  activo: boolean;
+  orden: number;
+}
 
 export interface Jugador {
   id: string;
   nombre: string;
   posicion: Posicion;
-  turno: 1 | 2;
+  turno: string; // id del turno (text)
   token: string;
+  confirmado: boolean;
 }
 
 export interface Voto {
@@ -20,136 +29,155 @@ export interface Voto {
   defensa: number;
 }
 
-// Solo lo usan funciones internas (algoritmo) que ya reciben datos ya cargados
 export interface DB {
   jugadores: Jugador[];
   votos: Voto[];
 }
 
-// ---- Mapeo snake_case (Supabase) <-> camelCase (app) ----
-interface JugadorRow {
-  id: string;
-  nombre: string;
-  posicion: Posicion;
-  turno: number;
-  token: string;
+const sql = neon(process.env.DATABASE_URL!);
+
+// ---- Turnos ----
+
+export async function getTurnos(): Promise<Turno[]> {
+  const data =
+    await sql`SELECT id, nombre, activo, orden FROM turnos ORDER BY orden ASC`;
+  return data as Turno[];
 }
 
-interface VotoRow {
-  votante_id: string;
-  objetivo_id: string;
-  ritmo: number;
-  resistencia: number;
-  tecnica: number;
-  remate: number;
-  defensa: number;
+export async function getTurnosActivos(): Promise<Turno[]> {
+  const data =
+    await sql`SELECT id, nombre, activo, orden FROM turnos WHERE activo = true ORDER BY orden ASC`;
+  return data as Turno[];
 }
 
-function mapJugador(r: JugadorRow): Jugador {
-  return {
-    id: r.id,
-    nombre: r.nombre,
-    posicion: r.posicion,
-    turno: r.turno as 1 | 2,
-    token: r.token,
-  };
+export async function insertTurno(t: Turno): Promise<void> {
+  await sql`
+    INSERT INTO turnos (id, nombre, activo, orden)
+    VALUES (${t.id}, ${t.nombre}, ${t.activo}, ${t.orden})
+  `;
 }
 
-function mapVoto(r: VotoRow): Voto {
-  return {
-    votanteId: r.votante_id,
-    objetivoId: r.objetivo_id,
-    ritmo: r.ritmo,
-    resistencia: r.resistencia,
-    tecnica: r.tecnica,
-    remate: r.remate,
-    defensa: r.defensa,
-  };
+export async function updateTurno(
+  id: string,
+  nombre: string,
+  activo: boolean
+): Promise<void> {
+  await sql`
+    UPDATE turnos SET nombre = ${nombre}, activo = ${activo} WHERE id = ${id}
+  `;
+}
+
+export async function deleteTurno(id: string): Promise<void> {
+  await sql`DELETE FROM turnos WHERE id = ${id}`;
 }
 
 // ---- Jugadores ----
+
 export async function getJugadores(): Promise<Jugador[]> {
-  const { data, error } = await supabase.from("jugadores").select("*");
-  if (error) throw error;
-  return (data as JugadorRow[]).map(mapJugador);
+  const data = await sql`
+    SELECT id, nombre, posicion, turno, token, confirmado FROM jugadores
+  `;
+  return data as Jugador[];
 }
 
 export async function getJugadorPorToken(token: string): Promise<Jugador | null> {
-  const { data, error } = await supabase
-    .from("jugadores")
-    .select("*")
-    .eq("token", token)
-    .maybeSingle();
-  if (error) throw error;
-  return data ? mapJugador(data as JugadorRow) : null;
+  const data = await sql`
+    SELECT id, nombre, posicion, turno, token, confirmado
+    FROM jugadores WHERE token = ${token} LIMIT 1
+  `;
+  return data.length > 0 ? (data[0] as Jugador) : null;
+}
+
+export async function getJugadorPorNombre(
+  nombre: string
+): Promise<Jugador | null> {
+  const data = await sql`
+    SELECT id FROM jugadores WHERE lower(nombre) = lower(${nombre}) LIMIT 1
+  `;
+  return data.length > 0 ? (data[0] as Jugador) : null;
 }
 
 export async function insertJugador(j: Jugador): Promise<void> {
-  const { error } = await supabase.from("jugadores").insert({
-    id: j.id,
-    nombre: j.nombre,
-    posicion: j.posicion,
-    turno: j.turno,
-    token: j.token,
-  });
-  if (error) throw error;
+  await sql`
+    INSERT INTO jugadores (id, nombre, posicion, turno, token, confirmado)
+    VALUES (${j.id}, ${j.nombre}, ${j.posicion}, ${j.turno}, ${j.token}, ${j.confirmado})
+  `;
 }
 
 export async function deleteJugador(id: string): Promise<void> {
-  // Los votos se borran solos por ON DELETE CASCADE (ver SQL)
-  const { error } = await supabase.from("jugadores").delete().eq("id", id);
-  if (error) throw error;
+  await sql`DELETE FROM jugadores WHERE id = ${id}`;
+}
+
+export async function setConfirmado(
+  jugadorId: string,
+  confirmado: boolean
+): Promise<void> {
+  await sql`UPDATE jugadores SET confirmado = ${confirmado} WHERE id = ${jugadorId}`;
 }
 
 // ---- Votos ----
+
 export async function getVotos(): Promise<Voto[]> {
-  const { data, error } = await supabase.from("votos").select("*");
-  if (error) throw error;
-  return (data as VotoRow[]).map(mapVoto);
+  const data = await sql`
+    SELECT votante_id AS "votanteId", objetivo_id AS "objetivoId",
+           ritmo, resistencia, tecnica, remate, defensa
+    FROM votos
+  `;
+  return data as Voto[];
 }
 
 export async function getVotosDeVotante(votanteId: string): Promise<Voto[]> {
-  const { data, error } = await supabase
-    .from("votos")
-    .select("*")
-    .eq("votante_id", votanteId);
-  if (error) throw error;
-  return (data as VotoRow[]).map(mapVoto);
+  const data = await sql`
+    SELECT votante_id AS "votanteId", objetivo_id AS "objetivoId",
+           ritmo, resistencia, tecnica, remate, defensa
+    FROM votos WHERE votante_id = ${votanteId}
+  `;
+  return data as Voto[];
 }
 
 export async function upsertVoto(v: Voto): Promise<void> {
-  const { error } = await supabase.from("votos").upsert(
-    {
-      votante_id: v.votanteId,
-      objetivo_id: v.objetivoId,
-      ritmo: v.ritmo,
-      resistencia: v.resistencia,
-      tecnica: v.tecnica,
-      remate: v.remate,
-      defensa: v.defensa,
-    },
-    { onConflict: "votante_id,objetivo_id" }
-  );
-  if (error) throw error;
+  await sql`
+    INSERT INTO votos (votante_id, objetivo_id, ritmo, resistencia, tecnica, remate, defensa)
+    VALUES (${v.votanteId}, ${v.objetivoId}, ${v.ritmo}, ${v.resistencia}, ${v.tecnica}, ${v.remate}, ${v.defensa})
+    ON CONFLICT (votante_id, objetivo_id) DO UPDATE SET
+      ritmo = EXCLUDED.ritmo,
+      resistencia = EXCLUDED.resistencia,
+      tecnica = EXCLUDED.tecnica,
+      remate = EXCLUDED.remate,
+      defensa = EXCLUDED.defensa
+  `;
 }
 
-export async function resetVotos(): Promise<void> {
-  const { error } = await supabase.from("votos").delete().neq("id", 0);
-  if (error) throw error;
+// ---- Ciclo semanal (NO borra votos, son de una sola vez en la vida) ----
+
+export async function nuevaSemana(): Promise<void> {
+  await sql`UPDATE jugadores SET confirmado = false`;
 }
 
-// ---- Helper para el algoritmo: cargar todo de golpe ----
+// ---- Reiniciar TODAS las votaciones (manual, raro) ----
+
+export async function reiniciarVotos(): Promise<void> {
+  await sql`DELETE FROM votos`;
+  await sql`UPDATE jugadores SET confirmado = false`;
+}
+
+// ---- Helper ----
+
 export async function readDB(): Promise<DB> {
-  const [jugadores, votos] = await Promise.all([
-    getJugadores(),
-    getVotos(),
-  ]);
+  const [jugadores, votos] = await Promise.all([getJugadores(), getVotos()]);
   return { jugadores, votos };
 }
 
-// ---- Auth admin (MVP) ----
+// ---- Auth ----
+
 export function checkAdminSecret(headerValue: string | null): boolean {
   const secreto = process.env.NEXT_PUBLIC_ADMIN_SECRET;
-  if (!secreto) return true; // Si no está configurado, permitido (dev local)
+  if (!secreto) return true;
   return secreto === headerValue;
+}
+
+export function checkPalabraAcceso(palabra: string | null): boolean {
+  const secreto = process.env.PALABRA_ACCESO;
+  if (!secreto) return true; // dev local sin palabra
+  return secreto === palabra;
 }

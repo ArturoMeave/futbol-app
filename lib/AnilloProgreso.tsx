@@ -1,9 +1,9 @@
 interface AnilloProgresoProps {
-  valor: number; // 0-10, por ejemplo la notaPosicion
+  valor: number;
   max?: number;
   size?: number;
   grosor?: number;
-  etiqueta?: string; // texto pequeño bajo el número, opcional
+  etiqueta?: string;
   color?: string;
 }
 
@@ -13,7 +13,7 @@ export default function AnilloProgreso({
   size = 56,
   grosor = 5,
   etiqueta,
-  color = "var(--verde-primario)",
+  color = "var(--acento)",
 }: AnilloProgresoProps) {
   const radio = (size - grosor) / 2;
   const circunferencia = 2 * Math.PI * radio;
@@ -38,7 +38,7 @@ export default function AnilloProgreso({
           cy={size / 2}
           r={radio}
           fill="none"
-          stroke="var(--verde-niebla)"
+          stroke="var(--cristal-bg-fuerte)"
           strokeWidth={grosor}
         />
         <circle
@@ -51,7 +51,10 @@ export default function AnilloProgreso({
           strokeDasharray={circunferencia}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 0.4s ease" }}
+          style={{
+            transition: "stroke-dashoffset 0.4s ease",
+            filter: `drop-shadow(0 0 6px ${color === "var(--acento)" ? "var(--acento-glow)" : "transparent"})`,
+          }}
         />
       </svg>
       <div
@@ -65,10 +68,10 @@ export default function AnilloProgreso({
       >
         <span
           style={{
-            fontFamily: "var(--font-fraunces)",
-            fontWeight: 600,
+            fontFamily: "var(--font-sora)",
+            fontWeight: 700,
             fontSize: size * 0.28,
-            color: "var(--verde-texto)",
+            color: "var(--texto)",
           }}
         >
           {valor.toFixed(1)}
