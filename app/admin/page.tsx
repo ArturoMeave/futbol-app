@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import SelectPosicion from "@/lib/SelectPosicion";
-import { Posicion } from "@/lib/db";
+import { Posicion } from "@/lib/constantes";
 
 interface Jugador {
   id: string;

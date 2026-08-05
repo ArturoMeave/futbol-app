@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SelectPosicion from "@/lib/SelectPosicion";
-import { Posicion } from "@/lib/db";
+import { Posicion } from "@/lib/constantes";
 
 interface Inscrito {
   id: string;
@@ -124,8 +124,8 @@ export default function UnirsePage() {
       </div>
       <h1 className="animar-entrada animar-retraso-1">Apuntarse</h1>
       <p className="subtitulo animar-entrada animar-retraso-1">
-        Regístrate una sola vez. Después podrás votar a tus compañeros y confirmar
-        si vas a jugar esta semana.
+        Regístrate una sola vez. Después podrás votar a tus compañeros y
+        confirmar si vas a jugar esta semana.
       </p>
 
       {/* Quién ya está apuntado */}
@@ -137,7 +137,9 @@ export default function UnirsePage() {
               <div className="jugador-fila" key={i.id}>
                 <span>
                   {i.nombre}
-                  <span className={`chip chip-${i.posicion}`}>{i.posicion}</span>
+                  <span className={`chip chip-${i.posicion}`}>
+                    {i.posicion}
+                  </span>
                 </span>
                 <span
                   style={{
@@ -157,8 +159,12 @@ export default function UnirsePage() {
       {/* Pega tu link */}
       <div className="tarjeta animar-entrada animar-retraso-2">
         <h2>Tengo mi link</h2>
-        <p className="subtitulo" style={{ marginBottom: 12, fontSize: "0.9rem" }}>
-          Si el admin te pasó un link de votación, pégalo aquí para entrar directamente.
+        <p
+          className="subtitulo"
+          style={{ marginBottom: 12, fontSize: "0.9rem" }}
+        >
+          Si el admin te pasó un link de votación, pégalo aquí para entrar
+          directamente.
         </p>
         {errorLink && (
           <p
@@ -186,7 +192,10 @@ export default function UnirsePage() {
       </div>
 
       {/* Formulario */}
-      <form onSubmit={registrar} className="tarjeta animar-entrada animar-retraso-2">
+      <form
+        onSubmit={registrar}
+        className="tarjeta animar-entrada animar-retraso-2"
+      >
         <h2>Tus datos</h2>
         {error && (
           <p

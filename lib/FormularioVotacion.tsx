@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AnilloProgreso from "./AnilloProgreso";
-import { POSICIONES, POSICION_LABELS, Posicion } from "./db";
+import { POSICIONES, POSICION_LABELS, Posicion } from "./constantes";
 
 interface Objetivo {
   id: string;

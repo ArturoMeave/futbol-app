@@ -1,7 +1,7 @@
 "use client";
 
 import { CSSProperties } from "react";
-import { POSICIONES, POSICION_LABELS, Posicion } from "./db";
+import { POSICIONES, POSICION_LABELS, Posicion } from "./constantes";
 
 interface Props {
   value: Posicion;
@@ -10,7 +10,12 @@ interface Props {
   style?: CSSProperties;
 }
 
-export default function SelectPosicion({ value, onChange, className, style }: Props) {
+export default function SelectPosicion({
+  value,
+  onChange,
+  className,
+  style,
+}: Props) {
   return (
     <select
       className={className ?? "campo-select"}
