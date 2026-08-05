@@ -36,8 +36,18 @@ interface HistorialItem {
   totalA: number;
   totalB: number;
   diferencia: number;
-  equipoA: { id: string; nombre: string; posicion: string; notaPosicion: number }[];
-  equipoB: { id: string; nombre: string; posicion: string; notaPosicion: number }[];
+  equipoA: {
+    id: string;
+    nombre: string;
+    posicion: string;
+    notaPosicion: number;
+  }[];
+  equipoB: {
+    id: string;
+    nombre: string;
+    posicion: string;
+    notaPosicion: number;
+  }[];
 }
 
 function EquiposContenido() {
@@ -52,11 +62,16 @@ function EquiposContenido() {
   const [guardadoMsg, setGuardadoMsg] = useState<string | null>(null);
 
   const [historial, setHistorial] = useState<HistorialItem[]>([]);
-  const [historialExpandido, setHistorialExpandido] = useState<number | null>(null);
+  const [historialExpandido, setHistorialExpandido] = useState<number | null>(
+    null,
+  );
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
   useEffect(() => {
-    setEsAdmin(sessionStorage.getItem("admin-ok") === "1");
+    // 1. Buscamos nuestra nueva llave en el bolsillo del navegador
+    const token = sessionStorage.getItem("admin-secret");
+    // 2. Si existe (es decir, si hay texto), activamos el modo admin
+    setEsAdmin(!!token);
   }, []);
 
   useEffect(() => {
@@ -104,7 +119,8 @@ function EquiposContenido() {
   }, [turnoActual, cargandoTurnos]);
 
   const turnosActivos = turnos.filter((t) => t.activo !== false);
-  const turnoNombre = turnos.find((t) => t.id === turnoActual)?.nombre ?? "Turno";
+  const turnoNombre =
+    turnos.find((t) => t.id === turnoActual)?.nombre ?? "Turno";
 
   function formatearFecha(ms: number) {
     try {
@@ -127,8 +143,24 @@ function EquiposContenido() {
           Fútbol Viernes
         </div>
         <h1>Equipos</h1>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "40vh" }}>
-          <div style={{ width: 40, height: 40, border: "3px solid rgba(15,157,88,0.12)", borderTopColor: "var(--acento)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "40vh",
+          }}
+        >
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              border: "3px solid rgba(15,157,88,0.12)",
+              borderTopColor: "var(--acento)",
+              borderRadius: "50%",
+              animation: "spin 0.8s linear infinite",
+            }}
+          />
         </div>
       </div>
     );
@@ -146,7 +178,14 @@ function EquiposContenido() {
 
       {/* Selector de turno */}
       {turnosActivos.length > 1 && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 16,
+            flexWrap: "wrap",
+          }}
+        >
           {turnosActivos.map((t) => (
             <button
               key={t.id}
@@ -154,7 +193,11 @@ function EquiposContenido() {
               onClick={() => setTurnoActual(t.id)}
               style={
                 t.id === turnoActual
-                  ? { background: "var(--acento)", color: "#fff", border: "none" }
+                  ? {
+                      background: "var(--acento)",
+                      color: "#fff",
+                      border: "none",
+                    }
                   : {}
               }
             >
@@ -165,16 +208,25 @@ function EquiposContenido() {
       )}
 
       {/* Botón generar */}
-      <div className="tarjeta animar-entrada animar-retraso-2" style={{ textAlign: "center" }}>
+      <div
+        className="tarjeta animar-entrada animar-retraso-2"
+        style={{ textAlign: "center" }}
+      >
         <button onClick={generar} disabled={generando || !turnoActual}>
-          {generando ? "Calculando..." : resultado && !resultado.error ? "Regenerar equipos" : "Generar equipos"}
+          {generando
+            ? "Calculando..."
+            : resultado && !resultado.error
+              ? "Regenerar equipos"
+              : "Generar equipos"}
         </button>
       </div>
 
       {/* Error */}
       {resultado?.error && (
         <div className="tarjeta animar-entrada animar-retraso-2">
-          <p className="subtitulo" style={{ margin: 0 }}>{resultado.error}</p>
+          <p className="subtitulo" style={{ margin: 0 }}>
+            {resultado.error}
+          </p>
         </div>
       )}
 
@@ -183,7 +235,11 @@ function EquiposContenido() {
         <>
           <div
             className="tarjeta"
-            style={{ textAlign: "center", marginBottom: 16, animation: "entrar 0.4s ease-out both" }}
+            style={{
+              textAlign: "center",
+              marginBottom: 16,
+              animation: "entrar 0.4s ease-out both",
+            }}
           >
             <span className="subtitulo" style={{ margin: 0, display: "block" }}>
               Diferencia entre equipos
@@ -193,7 +249,8 @@ function EquiposContenido() {
                 fontFamily: "var(--font-fraunces), serif",
                 fontSize: "2rem",
                 fontWeight: 600,
-                color: resultado.diferencia === 0 ? "var(--acento)" : "var(--texto)",
+                color:
+                  resultado.diferencia === 0 ? "var(--acento)" : "var(--texto)",
                 display: "block",
                 marginTop: 4,
               }}
@@ -218,37 +275,64 @@ function EquiposContenido() {
             )}
           </div>
 
-          <div className="equipos-grid" key={resultado.equipoA.length + "-" + resultado.equipoB.length}>
-            <div className="tarjeta" style={{ animation: "entrar 0.5s ease-out both" }}>
+          <div
+            className="equipos-grid"
+            key={resultado.equipoA.length + "-" + resultado.equipoB.length}
+          >
+            <div
+              className="tarjeta"
+              style={{ animation: "entrar 0.5s ease-out both" }}
+            >
               <div className="total-equipo">Equipo A — {resultado.totalA}</div>
               {resultado.equipoA.map((j, i) => (
                 <div
                   className="jugador-fila"
                   key={j.id}
-                  style={{ animation: `entrar 0.4s ease-out ${0.05 * i}s both` }}
+                  style={{
+                    animation: `entrar 0.4s ease-out ${0.05 * i}s both`,
+                  }}
                 >
                   <span>
                     {j.nombre}
-                    <span className={`chip chip-${j.posicion}`}>{j.posicion}</span>
+                    <span className={`chip chip-${j.posicion}`}>
+                      {j.posicion}
+                    </span>
                   </span>
-                  <AnilloProgreso valor={j.notaPosicion} size={44} grosor={4} color="var(--acento)" />
+                  <AnilloProgreso
+                    valor={j.notaPosicion}
+                    size={44}
+                    grosor={4}
+                    color="var(--acento)"
+                  />
                 </div>
               ))}
             </div>
 
-            <div className="tarjeta" style={{ animation: "entrar 0.5s ease-out 0.1s both" }}>
+            <div
+              className="tarjeta"
+              style={{ animation: "entrar 0.5s ease-out 0.1s both" }}
+            >
               <div className="total-equipo">Equipo B — {resultado.totalB}</div>
               {resultado.equipoB.map((j, i) => (
                 <div
                   className="jugador-fila"
                   key={j.id}
-                  style={{ animation: `entrar 0.4s ease-out ${0.05 * i + 0.1}s both` }}
+                  style={{
+                    animation: `entrar 0.4s ease-out ${0.05 * i + 0.1}s both`,
+                  }}
                 >
                   <span>
                     {j.nombre}
-                    <span className={`chip chip-${j.posicion}`}>{j.posicion}</span>
+                    <span className={`chip chip-${j.posicion}`}>
+                      {j.posicion}
+                    </span>
                   </span>
-                  <AnilloProgreso valor={j.notaPosicion} size={44} grosor={4} color="var(--acento)" />
+                  <AnilloProgreso
+                    valor={j.notaPosicion}
+                    size={44}
+                    grosor={4}
+                    color="var(--acento)"
+                  />
                 </div>
               ))}
             </div>
@@ -262,10 +346,20 @@ function EquiposContenido() {
                   setGuardando(true);
                   setGuardadoMsg(null);
                   const ligero = (arr: any[]) =>
-                    arr.map((j) => ({ id: j.id, nombre: j.nombre, posicion: j.posicion, notaPosicion: j.notaPosicion }));
+                    arr.map((j) => ({
+                      id: j.id,
+                      nombre: j.nombre,
+                      posicion: j.posicion,
+                      notaPosicion: j.notaPosicion,
+                    }));
                   const r = await fetch("/api/historial", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", "x-admin-secret": process.env.NEXT_PUBLIC_ADMIN_SECRET || "" },
+                    headers: {
+                      "Content-Type": "application/json",
+                      // 1. Leemos la llave del bolsillo en el momento exacto de enviarla
+                      "x-admin-secret":
+                        sessionStorage.getItem("admin-secret") || "",
+                    },
                     body: JSON.stringify({
                       turnoId: turnoActual,
                       turnoNombre,
@@ -277,7 +371,9 @@ function EquiposContenido() {
                     }),
                   });
                   setGuardando(false);
-                  setGuardadoMsg(r.ok ? "Guardado en historial ✅" : "Error al guardar");
+                  setGuardadoMsg(
+                    r.ok ? "Guardado en historial ✅" : "Error al guardar",
+                  );
                   setTimeout(() => setGuardadoMsg(null), 2500);
                   cargarHistorial();
                 }}
@@ -287,7 +383,15 @@ function EquiposContenido() {
                 {guardando ? "Guardando..." : "Guardar en historial"}
               </button>
               {guardadoMsg && (
-                <div style={{ marginTop: 8, fontSize: "0.82rem", color: "var(--acento)" }}>{guardadoMsg}</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: "0.82rem",
+                    color: "var(--acento)",
+                  }}
+                >
+                  {guardadoMsg}
+                </div>
               )}
             </div>
           )}
@@ -296,22 +400,46 @@ function EquiposContenido() {
 
       {/* Dashboard historial anterior */}
       <div className="tarjeta animar-entrada animar-retraso-3">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 14,
+          }}
+        >
           <h2 style={{ margin: 0 }}>Partidas anteriores</h2>
-          <button className="copiar-btn" onClick={cargarHistorial} disabled={cargandoHistorial} style={{ fontSize: "0.72rem" }}>
+          <button
+            className="copiar-btn"
+            onClick={cargarHistorial}
+            disabled={cargandoHistorial}
+            style={{ fontSize: "0.72rem" }}
+          >
             {cargandoHistorial ? "Cargando..." : "Refrescar"}
           </button>
         </div>
         {historial.length === 0 ? (
           <p className="subtitulo" style={{ margin: 0 }}>
-            Aún no hay equipos guardados de este turno. Genera uno y guárdalo como referencia.
+            Aún no hay equipos guardados de este turno. Genera uno y guárdalo
+            como referencia.
           </p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {historial.map((h) => (
-              <div key={h.id} style={{ border: "1px solid var(--cristal-borde)", borderRadius: "var(--radio-sm)", padding: 12 }}>
+              <div
+                key={h.id}
+                style={{
+                  border: "1px solid var(--cristal-borde)",
+                  borderRadius: "var(--radio-sm)",
+                  padding: 12,
+                }}
+              >
                 <button
-                  onClick={() => setHistorialExpandido(historialExpandido === h.id ? null : h.id)}
+                  onClick={() =>
+                    setHistorialExpandido(
+                      historialExpandido === h.id ? null : h.id,
+                    )
+                  }
                   style={{
                     width: "100%",
                     display: "flex",
@@ -326,31 +454,96 @@ function EquiposContenido() {
                   }}
                 >
                   <span>{formatearFecha(h.fecha)}</span>
-                  <span style={{ color: h.diferencia === 0 ? "var(--acento)" : "var(--texto-suave)", fontSize: "0.8rem" }}>
+                  <span
+                    style={{
+                      color:
+                        h.diferencia === 0
+                          ? "var(--acento)"
+                          : "var(--texto-suave)",
+                      fontSize: "0.8rem",
+                    }}
+                  >
                     A {h.totalA} — B {h.totalB} (Δ {h.diferencia})
                   </span>
                 </button>
                 {historialExpandido === h.id && (
-                  <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                    }}
+                  >
                     <div>
-                      <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--texto-suave)", marginBottom: 6 }}>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          color: "var(--texto-suave)",
+                          marginBottom: 6,
+                        }}
+                      >
                         Equipo A — {h.totalA}
                       </div>
                       {h.equipoA.map((j) => (
-                        <div key={j.id} style={{ fontSize: "0.82rem", marginBottom: 2, display: "flex", justifyContent: "space-between" }}>
-                          <span>{j.nombre} <span className={`chip chip-${j.posicion}`} style={{ fontSize: "0.6rem" }}>{j.posicion}</span></span>
-                          <span style={{ color: "var(--texto-suave)" }}>{j.notaPosicion}</span>
+                        <div
+                          key={j.id}
+                          style={{
+                            fontSize: "0.82rem",
+                            marginBottom: 2,
+                            display: "flex",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <span>
+                            {j.nombre}{" "}
+                            <span
+                              className={`chip chip-${j.posicion}`}
+                              style={{ fontSize: "0.6rem" }}
+                            >
+                              {j.posicion}
+                            </span>
+                          </span>
+                          <span style={{ color: "var(--texto-suave)" }}>
+                            {j.notaPosicion}
+                          </span>
                         </div>
                       ))}
                     </div>
                     <div>
-                      <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--texto-suave)", marginBottom: 6 }}>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          color: "var(--texto-suave)",
+                          marginBottom: 6,
+                        }}
+                      >
                         Equipo B — {h.totalB}
                       </div>
                       {h.equipoB.map((j) => (
-                        <div key={j.id} style={{ fontSize: "0.82rem", marginBottom: 2, display: "flex", justifyContent: "space-between" }}>
-                          <span>{j.nombre} <span className={`chip chip-${j.posicion}`} style={{ fontSize: "0.6rem" }}>{j.posicion}</span></span>
-                          <span style={{ color: "var(--texto-suave)" }}>{j.notaPosicion}</span>
+                        <div
+                          key={j.id}
+                          style={{
+                            fontSize: "0.82rem",
+                            marginBottom: 2,
+                            display: "flex",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <span>
+                            {j.nombre}{" "}
+                            <span
+                              className={`chip chip-${j.posicion}`}
+                              style={{ fontSize: "0.6rem" }}
+                            >
+                              {j.posicion}
+                            </span>
+                          </span>
+                          <span style={{ color: "var(--texto-suave)" }}>
+                            {j.notaPosicion}
+                          </span>
                         </div>
                       ))}
                     </div>
