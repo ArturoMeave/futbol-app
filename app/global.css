@@ -96,11 +96,7 @@ body {
   left: -10%;
   width: 520px;
   height: 520px;
-  background: radial-gradient(
-    circle,
-    rgba(15, 157, 88, 0.35),
-    transparent 70%
-  );
+  background: radial-gradient(circle, rgba(15, 157, 88, 0.35), transparent 70%);
   animation: flotar 20s ease-in-out infinite;
 }
 
@@ -208,8 +204,13 @@ body {
 }
 
 @keyframes pulso {
-  0%, 100% { box-shadow: 0 0 0 4px var(--acento-suave); }
-  50% { box-shadow: 0 0 0 8px rgba(15, 157, 88, 0.06); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px var(--acento-suave);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(15, 157, 88, 0.06);
+  }
 }
 
 /* ── Tipografía ── */
@@ -982,5 +983,21 @@ a {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* ── Ajustes responsivos para móviles pequeños ── */
+@media (max-width: 480px) {
+  /* Hacemos que la caja que contiene los botones permita que se expandan */
+  .link-jugador > div {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Le decimos a los botones que, si no caben, crezcan al 100% del ancho */
+  .link-jugador .copiar-btn {
+    flex: 1 1 100%;
+    text-align: center;
+    padding: 12px; /* Un poco más de altura para tocarlos con el dedo cómodamente */
   }
 }

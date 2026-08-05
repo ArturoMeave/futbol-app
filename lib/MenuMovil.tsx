@@ -22,10 +22,26 @@ export default function MenuMovil() {
   }, [pathname]);
 
   // Bloquear scroll del fondo con el drawer abierto
+  // Bloquear scroll del fondo con el drawer abierto y vigilar el tamaño de pantalla
   useEffect(() => {
+    // 1. Bloqueamos o desbloqueamos el scroll según si está abierto
     document.body.style.overflow = abierto ? "hidden" : "";
+
+    // 2. Creamos la función que vigila el ancho
+    const vigilarTamaño = () => {
+      // Si la pantalla crece más de 900px, cerramos el menú móvil a la fuerza
+      if (window.innerWidth > 900 && abierto) {
+        setAbierto(false);
+      }
+    };
+
+    // 3. Le decimos al navegador que ejecute esa función cada vez que se redimensione
+    window.addEventListener("resize", vigilarTamaño);
+
+    // 4. Función de limpieza: devolvemos todo a la normalidad al salir
     return () => {
       document.body.style.overflow = "";
+      window.removeEventListener("resize", vigilarTamaño);
     };
   }, [abierto]);
 
@@ -56,7 +72,12 @@ export default function MenuMovil() {
         />
       )}
 
-      <div className={`drawer${abierto ? " abierto" : ""}`} role="dialog" aria-modal="true" aria-label="Menú">
+      <div
+        className={`drawer${abierto ? " abierto" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú"
+      >
         <div className="drawer-cabecera">
           <div className="sidebar-marca">
             <span className="punto" />
