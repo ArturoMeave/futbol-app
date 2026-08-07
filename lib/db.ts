@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { nanoid } from "nanoid";
 import { Posicion } from "./constantes";
+export type { Posicion } from "./constantes";
 
 
 export interface Turno {
@@ -17,6 +18,7 @@ export interface Jugador {
   turno: string; // id del turno (text)
   token: string;
   confirmado: boolean;
+  votacionFinalizada: boolean;
 }
 
 export interface JugadorStats {
@@ -101,17 +103,28 @@ export async function deleteTurno(id: string): Promise<void> {
 
 export async function getJugadores(): Promise<Jugador[]> {
   const data = await sql`
-    SELECT id, nombre, posicion, turno, token, confirmado FROM jugadores
+    SELECT id, nombre, posicion, turno, token, confirmado,
+           votacion_finalizada AS "votacionFinalizada" FROM jugadores
   `;
   return data as Jugador[];
 }
 
 export async function getJugadorPorToken(token: string): Promise<Jugador | null> {
   const data = await sql`
-    SELECT id, nombre, posicion, turno, token, confirmado
+    SELECT id, nombre, posicion, turno, token, confirmado,
+           votacion_finalizada AS "votacionFinalizada"
     FROM jugadores WHERE token = ${token} LIMIT 1
   `;
   return data.length > 0 ? (data[0] as Jugador) : null;
+}
+
+export async function finalizarVotacion(jugadorId: string): Promise<boolean> {
+  const data = await sql`
+    UPDATE jugadores SET votacion_finalizada = true
+    WHERE id = ${jugadorId} AND votacion_finalizada = false
+    RETURNING id
+  `;
+  return data.length === 1;
 }
 
 export async function getJugadorPorNombre(
@@ -220,21 +233,14 @@ export async function upsertVotosBatch(votos: Voto[]): Promise<void> {
   // Si nos mandan una lista vacía, no hacemos nada para evitar errores
   if (votos.length === 0) return;
 
-  // Promise.all es nuestro "director de orquesta" que envía todo a la vez
-  await Promise.all(
+  await sql.transaction(
     votos.map((v) =>
       sql`
         INSERT INTO votos (votante_id, objetivo_id, ritmo, resistencia, tecnica, remate, defensa, posicion_votada)
         VALUES (${v.votanteId}, ${v.objetivoId}, ${v.ritmo}, ${v.resistencia}, ${v.tecnica}, ${v.remate}, ${v.defensa}, ${v.posicionVotada ?? null})
-        ON CONFLICT (votante_id, objetivo_id) DO UPDATE SET
-          ritmo = EXCLUDED.ritmo,
-          resistencia = EXCLUDED.resistencia,
-          tecnica = EXCLUDED.tecnica,
-          remate = EXCLUDED.remate,
-          defensa = EXCLUDED.defensa,
-          posicion_votada = EXCLUDED.posicion_votada
+        ON CONFLICT (votante_id, objetivo_id) DO NOTHING
       `
-    )
+    ),
   );
 }
 
@@ -319,13 +325,13 @@ export async function getHistorialEquipos(turnoId?: string, limit = 20): Promise
 // ---- Auth ----
 
 export function checkAdminSecret(headerValue: string | null): boolean {
-  const secreto = process.env.NEXT_PUBLIC_ADMIN_SECRET;
-  if (!secreto) return true;
+  const secreto = process.env.ADMIN_SECRET;
+  if (!secreto || !headerValue) return false;
   return secreto === headerValue;
 }
 
 export function checkPalabraAcceso(palabra: string | null): boolean {
   const secreto = process.env.PALABRA_ACCESO;
-  if (!secreto) return true; // dev local sin palabra
+  if (!secreto) return false;
   return secreto === palabra;
 }

@@ -7,14 +7,15 @@ export interface Seccion {
   href: string;
   // Prefijos de ruta que marcan esta sección como activa
   coinciden: string[];
+  grupo: "juego" | "gestion";
 }
 
 export const SECCIONES: Seccion[] = [
-  { id: "inicio", nombre: "Inicio", icono: Home, href: "/", coinciden: ["/"] },
-  { id: "semana", nombre: "Semana", icono: CalendarCheck, href: "/semana", coinciden: ["/semana"] },
-  { id: "equipos", nombre: "Equipos", icono: Trophy, href: "/equipos", coinciden: ["/equipos"] },
-  { id: "votar", nombre: "Votar", icono: Vote, href: "/votar", coinciden: ["/votar", "/unirse"] },
-  { id: "admin", nombre: "Admin", icono: ShieldCheck, href: "/admin", coinciden: ["/admin"] },
+  { id: "inicio", nombre: "Inicio", icono: Home, href: "/", coinciden: ["/"], grupo: "juego" },
+  { id: "votar", nombre: "Votar", icono: Vote, href: "/votar", coinciden: ["/votar", "/unirse"], grupo: "juego" },
+  { id: "equipos", nombre: "Equipos", icono: Trophy, href: "/equipos", coinciden: ["/equipos"], grupo: "juego" },
+  { id: "semana", nombre: "Semana", icono: CalendarCheck, href: "/semana", coinciden: ["/semana"], grupo: "gestion" },
+  { id: "admin", nombre: "Administración", icono: ShieldCheck, href: "/admin", coinciden: ["/admin"], grupo: "gestion" },
 ];
 
 export function seccionActiva(pathname: string): string {

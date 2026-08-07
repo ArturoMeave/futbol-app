@@ -1,23 +1,23 @@
 :root {
   /* ── Paleta verde deportiva ── */
-  --fondo: #eef7f0;
-  --fondo-elevado: #ffffff;
+  --fondo: #f5f2ea;
+  --fondo-elevado: #fffdf8;
 
-  --texto: #0f2e1c;
-  --texto-suave: #5b7568;
+  --texto: #14251f;
+  --texto-suave: #64736a;
   --texto-invertido: #ffffff;
 
   /* Acento principal — verde esmeralda potente */
-  --acento: #0f9d58;
-  --acento-hover: #0b7d46;
-  --acento-suave: rgba(15, 157, 88, 0.12);
+  --acento: #e45b32;
+  --acento-hover: #c74724;
+  --acento-suave: rgba(228, 91, 50, 0.12);
 
   /* Cristal con tinte verde */
-  --cristal-bg: rgba(255, 255, 255, 0.6);
-  --cristal-bg-fuerte: rgba(255, 255, 255, 0.82);
-  --cristal-borde: rgba(15, 46, 28, 0.08);
-  --sombra-cristal: 0 10px 40px rgba(15, 46, 28, 0.08);
-  --sombra-hover: 0 16px 50px rgba(15, 46, 28, 0.14);
+  --cristal-bg: #fffdf8;
+  --cristal-bg-fuerte: #fffdf8;
+  --cristal-borde: #dedbd1;
+  --sombra-cristal: 0 8px 0 rgba(20, 37, 31, 0.04);
+  --sombra-hover: 0 12px 0 rgba(20, 37, 31, 0.06);
 
   /* Posiciones — pastel editorial ((siguen siendo los anteriores) */
   --del-bg: #fecaca;
@@ -30,13 +30,13 @@
   --por-texto: #6b21a8;
 
   /* Colores equipo */
-  --equipo-a: #0f9d58;
-  --equipo-b: #2d7d46;
+  --equipo-a: #e4572e;
+  --equipo-b: #315c4a;
 
   /* Radios grandes */
-  --radio-lg: 28px;
-  --radio-md: 18px;
-  --radio-sm: 12px;
+  --radio-lg: 18px;
+  --radio-md: 10px;
+  --radio-sm: 7px;
 
   /* Variables legacy que usa el código existente */
   --verde-primario: #0f9d58;
@@ -80,6 +80,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: -1;
+  opacity: 0.18;
   overflow: hidden;
   pointer-events: none;
 }
@@ -87,8 +88,8 @@ body {
 .mancha {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.45;
+  filter: blur(120px);
+  opacity: 0.25;
 }
 
 .mancha-1 {
@@ -173,9 +174,9 @@ body {
 
 /* ── Layout ── */
 .contenedor {
-  max-width: 720px;
+  max-width: 780px;
   margin: 0 auto;
-  padding: 48px 20px 80px;
+  padding: 64px 24px 96px;
   position: relative;
   z-index: 1;
 }
@@ -188,7 +189,7 @@ body {
   font-family: var(--font-fraunces), serif;
   font-weight: 600;
   font-size: 1rem;
-  color: var(--acento);
+  color: var(--texto);
   margin-bottom: 24px;
   letter-spacing: -0.01em;
 }
@@ -224,16 +225,6 @@ h1 {
   color: var(--texto);
 }
 
-h1::after {
-  content: "";
-  display: block;
-  width: 48px;
-  height: 4px;
-  background: linear-gradient(90deg, var(--acento), transparent);
-  border-radius: 999px;
-  margin-top: 16px;
-}
-
 h2 {
   font-family: var(--font-fraunces), serif;
   font-weight: 500;
@@ -254,11 +245,11 @@ h2 {
 /* ── Tarjetas Glassmorphism Premium ── */
 .tarjeta {
   background: var(--cristal-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border: 1px solid var(--cristal-borde);
-  border-radius: var(--radio-lg);
-  padding: 28px;
+  border-radius: 24px;
+  padding: 30px;
   margin-bottom: 20px;
   box-shadow: var(--sombra-cristal);
   transition:
@@ -270,6 +261,7 @@ h2 {
   transform: translateY(-2px);
   box-shadow: var(--sombra-hover);
 }
+
 
 /* ── Botones ── */
 button,
@@ -290,8 +282,16 @@ button,
 button:hover,
 .boton-primario:hover {
   background: var(--acento-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(15, 157, 88, 0.32);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 rgba(20, 37, 31, 0.16);
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(228, 87, 46, 0.3);
+  outline-offset: 3px;
 }
 
 button:active {
@@ -321,7 +321,7 @@ button:disabled {
 .boton-secundario:hover {
   background: var(--verde-niebla);
   border-color: var(--acento);
-  transform: translateY(-1px);
+  transform: none;
 }
 
 /* ── Inputs ── */
@@ -473,7 +473,15 @@ button:disabled {
 .equipos-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 20px;
+}
+
+.equipos-grid > .tarjeta:first-child {
+  border-top: 4px solid var(--equipo-a);
+}
+
+.equipos-grid > .tarjeta:last-child {
+  border-top: 4px solid var(--equipo-b);
 }
 
 @media (max-width: 640px) {
@@ -487,7 +495,7 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid rgba(26, 26, 46, 0.06);
   font-size: 0.95rem;
 }
@@ -680,6 +688,16 @@ a {
   margin-top: 28px;
 }
 
+.sidebar-grupo {
+  padding: 18px 14px 6px;
+  color: var(--texto-suave);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
 .sidebar-item {
   display: flex;
   align-items: center;
@@ -743,8 +761,8 @@ a {
   justify-content: space-between;
   padding: 0 16px;
   background: var(--cristal-bg-fuerte);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-bottom: 1px solid var(--cristal-borde);
 }
 
@@ -786,8 +804,8 @@ a {
   width: min(300px, 84vw);
   z-index: 110;
   background: var(--cristal-bg-fuerte);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border-right: 1px solid var(--cristal-borde);
   transform: translateX(-100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -837,8 +855,8 @@ a {
     width: var(--sidebar-ancho);
     padding: 26px 18px;
     background: var(--cristal-bg-fuerte);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border-right: 1px solid var(--cristal-borde);
     z-index: 50;
   }
@@ -854,10 +872,10 @@ a {
 
 .stat-card {
   background: var(--cristal-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border: 1px solid var(--cristal-borde);
-  border-radius: var(--radio-md);
+  border-radius: 20px;
   padding: 18px 20px;
   box-shadow: var(--sombra-cristal);
   display: flex;
@@ -876,6 +894,7 @@ a {
   gap: 16px;
   min-height: 120px;
   box-shadow: var(--sombra-hover);
+  background: linear-gradient(135deg, rgba(255, 253, 248, 0.94), rgba(255, 238, 226, 0.82));
 }
 
 .stat-etiqueta {
@@ -946,8 +965,8 @@ a {
   gap: 12px;
   padding: 12px 16px;
   background: var(--cristal-bg-fuerte);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   border: 1px solid var(--cristal-borde);
   border-radius: var(--radio-md);
   box-shadow: 0 12px 40px rgba(15, 46, 28, 0.18);
@@ -988,6 +1007,28 @@ a {
 
 /* ── Ajustes responsivos para móviles pequeños ── */
 @media (max-width: 480px) {
+  .contenedor {
+    padding: 34px 16px 72px;
+  }
+
+  .tarjeta {
+    padding: 22px 18px;
+    border-radius: 20px;
+  }
+
+  h1 {
+    font-size: 2.15rem;
+  }
+
+  .fila-atributo {
+    gap: 10px;
+  }
+
+  .fila-atributo label {
+    width: 82px;
+    font-size: 0.8rem;
+  }
+
   /* Hacemos que la caja que contiene los botones permita que se expandan */
   .link-jugador > div {
     width: 100%;
@@ -999,5 +1040,16 @@ a {
     flex: 1 1 100%;
     text-align: center;
     padding: 12px; /* Un poco más de altura para tocarlos con el dedo cómodamente */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

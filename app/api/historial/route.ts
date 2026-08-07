@@ -6,8 +6,12 @@ import {
 } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
+  if (!checkAdminSecret(req.headers.get("x-admin-secret"))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
   const turnoId = req.nextUrl.searchParams.get("turno") ?? undefined;
-  const limit = Number(req.nextUrl.searchParams.get("limit") ?? 20);
+  const parsedLimit = Number(req.nextUrl.searchParams.get("limit") ?? 20);
+  const limit = Number.isInteger(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 100) : 20;
   const data = await getHistorialEquipos(turnoId, limit);
   return NextResponse.json(data);
 }

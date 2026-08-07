@@ -9,7 +9,7 @@ import {
 } from "@/lib/db";
 import { nanoid } from "nanoid";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const turnos = await getTurnos();
   return NextResponse.json(turnos);
 }

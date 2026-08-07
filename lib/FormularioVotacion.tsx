@@ -31,14 +31,12 @@ interface Props {
   votanteId?: string;
   token?: string;
   votanteNombreInicial?: string;
-  onCambiar?: () => void;
 }
 
 export default function FormularioVotacion({
   votanteId,
   token,
   votanteNombreInicial = "",
-  onCambiar,
 }: Props) {
   const router = useRouter();
   const [cargando, setCargando] = useState(true);
@@ -86,6 +84,7 @@ export default function FormularioVotacion({
         } else {
           setVotanteNombre(data.votante.nombre);
           setConfirmado(data.votante.confirmado);
+          setTerminado(data.votante.votacionFinalizada);
           setObjetivos(data.objetivos);
           const iniciales: Record<string, Atributos> = {};
           const posIniciales: Record<string, Posicion> = {};
@@ -146,14 +145,7 @@ export default function FormularioVotacion({
         <h1>Error o Link no válido</h1>
         <p className="subtitulo">{error}</p>
 
-        {/* Si entramos por la lista general (tenemos onCambiar), mostramos el botón de volver. 
-            Si entramos por link (no tenemos onCambiar), mostramos la caja para pegar el link. */}
-        {onCambiar ? (
-          <button className="boton-secundario" onClick={onCambiar}>
-            Cambiar jugador
-          </button>
-        ) : (
-          <div className="tarjeta">
+        <div className="tarjeta">
             <h2>Tengo mi link</h2>
             <p
               className="subtitulo"
@@ -184,8 +176,7 @@ export default function FormularioVotacion({
             <button onClick={usarLinkAlt} style={{ marginTop: 12 }}>
               Entrar a mi votación →
             </button>
-          </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -201,11 +192,6 @@ export default function FormularioVotacion({
         <p className="subtitulo">
           No hay nadie a quien votar todavía. Vuelve más tarde.
         </p>
-        {onCambiar && (
-          <button className="boton-secundario" onClick={onCambiar}>
-            No soy {votanteNombre}
-          </button>
-        )}
       </div>
     );
 
@@ -256,11 +242,16 @@ export default function FormularioVotacion({
       const postUrl = token ? `/api/votar/${token}` : `/api/votar`;
       const postBody = token ? { votos } : { votanteId, votos };
 
-      await fetch(postUrl, {
+      const respuesta = await fetch(postUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(postBody),
       });
+      if (!respuesta.ok) {
+        setError("No se pudo guardar la votación. Inténtalo de nuevo.");
+        setEnviando(false);
+        return;
+      }
       setEnviando(false);
       setTerminado(true);
     } else {
@@ -315,15 +306,6 @@ export default function FormularioVotacion({
         <p className="subtitulo" style={{ maxWidth: 360 }}>
           Tu votación se ha guardado. Gracias por participar.
         </p>
-        {onCambiar && (
-          <button
-            className="boton-secundario"
-            onClick={onCambiar}
-            style={{ maxWidth: 240 }}
-          >
-            Votar como otra persona
-          </button>
-        )}
       </div>
     );
   }
@@ -344,15 +326,6 @@ export default function FormularioVotacion({
         }}
       >
         <h1 style={{ margin: 0 }}>Hola, {votanteNombre}</h1>
-        {onCambiar && (
-          <button
-            onClick={onCambiar}
-            className="copiar-btn"
-            style={{ fontSize: "0.72rem" }}
-          >
-            No soy yo
-          </button>
-        )}
       </div>
       <p className="subtitulo">
         Puntúa a{" "}

@@ -13,7 +13,7 @@ import {
 } from "@/lib/db";
 import { nanoid } from "nanoid";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const [jugadores, votos] = await Promise.all([getJugadores(), getVotos()]);
   const jugadoresConEstado = jugadores.map((j) => {
     const votosHechos = votos.filter((v) => v.votanteId === j.id).length;
@@ -22,7 +22,10 @@ export async function GET() {
     ).length;
     return { ...j, votosHechos, totalPosibles };
   });
-  return NextResponse.json(jugadoresConEstado);
+  const esAdmin = checkAdminSecret(req.headers.get("x-admin-secret"));
+  return NextResponse.json(
+    esAdmin ? jugadoresConEstado : jugadoresConEstado.map(({ token, ...j }) => j),
+  );
 }
 
 function tokenPara(nombre: string): string {
@@ -45,6 +48,7 @@ export async function POST(req: NextRequest) {
         turno: b.turno,
         token: tokenPara(String(b.nombre).trim()),
         confirmado: false,
+        votacionFinalizada: false,
       }));
     if (nuevos.length === 0) {
       return NextResponse.json({ error: "Sin jugadores válidos" }, { status: 400 });
@@ -66,6 +70,7 @@ export async function POST(req: NextRequest) {
     turno: turno ?? "",
     token: tokenPara(String(nombre).trim()),
     confirmado: false,
+    votacionFinalizada: false,
   };
   await insertJugador(nuevo);
 

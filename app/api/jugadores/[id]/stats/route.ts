@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getJugadorStats, checkAdminSecret } from "@/lib/db";
 
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } },
+) {
   if (!checkAdminSecret(req.headers.get("x-admin-secret"))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
-  const id = req.nextUrl.searchParams.get("id");
+  const id = params.id;
   if (!id) {
     return NextResponse.json({ error: "Falta id" }, { status: 400 });
   }

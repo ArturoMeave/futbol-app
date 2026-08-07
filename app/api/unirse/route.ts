@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 import {
   getJugadores,
   getTurnosActivos,
@@ -31,6 +32,10 @@ export async function GET() {
 // POST: registra un jugador nuevo (self-signup)
 // body: { nombre, posicion, turno, palabraAcceso }
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (!rateLimit(`join:${ip}`, 10, 60_000)) {
+    return NextResponse.json({ error: "Demasiadas peticiones" }, { status: 429 });
+  }
   const body = await req.json();
   const { nombre, posicion, turno, palabraAcceso } = body;
 
@@ -64,6 +69,7 @@ export async function POST(req: NextRequest) {
     turno,
     token: `tok-${nanoid(12)}`,
     confirmado: false,
+    votacionFinalizada: false,
   };
   await insertJugador(nuevo);
 

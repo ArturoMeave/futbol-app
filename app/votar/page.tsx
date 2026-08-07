@@ -55,14 +55,6 @@ export default function VotarUniversalPage() {
     setFase("votar");
   }
 
-  function cambiarJugador() {
-    localStorage.removeItem(STORAGE_KEY);
-    setMiId(null);
-    setMiNombre("");
-    setSeleccion("");
-    setFase("identidad");
-  }
-
   if (cargando)
     return (
       <div
@@ -204,7 +196,6 @@ export default function VotarUniversalPage() {
     <FormularioVotacion 
       votanteId={miId} 
       votanteNombreInicial={miNombre} 
-      onCambiar={cambiarJugador} 
     />
   );
 }

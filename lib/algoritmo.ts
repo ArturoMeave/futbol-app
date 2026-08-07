@@ -1,4 +1,5 @@
-import { DB, Jugador, Posicion, Voto, POSICIONES, posicionEfectivaVotos } from "./db";
+import { DB, Jugador, Posicion, Voto, posicionEfectivaVotos } from "./db";
+import { POSICIONES } from "./constantes";
 
 function conteoVacio(): Record<Posicion, number> {
   const r = {} as Record<Posicion, number>;

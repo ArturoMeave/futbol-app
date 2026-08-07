@@ -144,8 +144,8 @@ export default function AdminPage() {
   function cargar() {
     setCargando(true);
     Promise.all([
-      fetch("/api/jugadores").then((r) => r.json()),
-      fetch("/api/turnos").then((r) => r.json()),
+      adminFetch("/api/jugadores").then((r) => r.json()),
+      adminFetch("/api/turnos").then((r) => r.json()),
     ]).then(([js, ts]: [Jugador[], Turno[]]) => {
       setJugadores(js);
       setTurnos(ts);
