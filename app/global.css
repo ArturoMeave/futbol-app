@@ -80,7 +80,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: -1;
-  opacity: 0.18;
+  opacity: 0.12;
   overflow: hidden;
   pointer-events: none;
 }
@@ -88,7 +88,7 @@ body {
 .mancha {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
+  filter: blur(80px);
   opacity: 0.25;
 }
 
@@ -98,7 +98,7 @@ body {
   width: 520px;
   height: 520px;
   background: radial-gradient(circle, rgba(15, 157, 88, 0.35), transparent 70%);
-  animation: flotar 20s ease-in-out infinite;
+  animation: none;
 }
 
 .mancha-2 {
@@ -111,7 +111,7 @@ body {
     rgba(134, 239, 172, 0.45),
     transparent 70%
   );
-  animation: flotar 25s ease-in-out infinite reverse;
+  animation: none;
 }
 
 .mancha-3 {
@@ -124,7 +124,7 @@ body {
     rgba(234, 245, 238, 0.95),
     transparent 70%
   );
-  animation: flotar 22s ease-in-out infinite 5s;
+  animation: none;
 }
 
 .mancha-4 {
@@ -137,7 +137,7 @@ body {
     rgba(190, 242, 100, 0.3),
     transparent 70%
   );
-  animation: flotar 18s ease-in-out infinite 2s;
+  animation: none;
 }
 
 @keyframes flotar {
@@ -255,6 +255,12 @@ h2 {
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
+}
+
+.contenedor > .tarjeta,
+.contenedor > .stat-grid {
+  content-visibility: auto;
+  contain-intrinsic-size: 160px;
 }
 
 .tarjeta:hover {
